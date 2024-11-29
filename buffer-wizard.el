@@ -35,6 +35,8 @@
           :tag "Github"
           "https://github.com/jamescherti/buffer-wizard.el"))
 
+;;; Helper functions
+
 (defun buffer-wizard--message (&rest args)
   "Display a message with '[buffer-wizard]' prepended.
 The message is formatted with the provided arguments ARGS."
@@ -45,9 +47,15 @@ The message is formatted with the provided arguments ARGS."
 The message is formatted with the provided arguments ARGS."
   (apply #'message (concat "[buffer-wizard] Warning: " (car args)) (cdr args)))
 
-(defvar buffer-wizard-after-rename-functions nil
-  "List of functions to run after renaming.
-Each function takes one argument: the buffer being renamed.")
+;;; Rename file
+
+(defvar buffer-wizard-before-rename-file-functions nil
+  "List of functions to run before renaming a file.
+Each function takes 3 argument: (buffer previous-path new-path).")
+
+(defvar buffer-wizard-after-rename-file-functions nil
+  "List of functions to run after renaming a file.
+Each function takes 3 argument: (buffer previous-path new-path).")
 
 (defun buffer-wizard--rename-all-buffer-names (old-filename new-filename)
   "Update buffer names to reflect the renaming of a file.
@@ -84,7 +92,7 @@ This includes indirect buffers whose names are derived from the old filename."
 This command updates the file name on disk, adjusts the buffer name, and updates
 any indirect buffers or other buffers associated with the old file.
 
-Hooks in `buffer-wizard-after-rename-functions' are run after the renaming
+Hooks in `buffer-wizard-after-rename-file-functions' are run after the renaming
 process."
   (interactive)
   (let* ((filename (let ((buffer-file-name (buffer-base-buffer)))
@@ -115,6 +123,9 @@ process."
         (when (not (string= basename new-basename))
           (let ((new-filename (expand-file-name new-basename
                                                 (file-name-directory filename))))
+            (run-hook-with-args buffer-wizard-before-rename-file-functions
+                                (current-buffer) filename new-filename)
+
             (if (vc-backend filename)
                 (progn
                   ;; Rename the file using VC
@@ -128,18 +139,12 @@ process."
 
             (set-visited-file-name new-filename t t)
 
-            ;; Update all buffers pointing to the old file
-            ;; Broken
+            ;; Update all buffers pointing to the old file Broken
             (buffer-wizard--rename-all-buffer-names filename
                                                     new-filename)
 
-            ;; To make sure it is added to other plugins such as recentf
-            (run-hooks 'find-file-hook)
-
-            ;; (run-hook-with-args buffer-wizard-after-rename-functions
-            ;;                     (current-buffer))
-
-            ))))))
+            (run-hook-with-args buffer-wizard-after-rename-file-functions
+                                (current-buffer) filename new-filename)))))))
 
 (provide 'buffer-wizard)
 ;;; buffer-wizard.el ends here
