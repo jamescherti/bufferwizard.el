@@ -1,7 +1,7 @@
 ---
 #
 # Copyright (C) 2024 James Cherti | https://www.jamescherti.com/contact/
-# URL: https://github.com/jamescherti/buffer-wizard.el
+# URL: https://github.com/jamescherti/bufferwizard.el
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ jobs:
 
       - name: Run melpazoid
         env:
-          RECIPE: (buffer-wizard :repo "jamescherti/buffer-wizard.el" :branch "${{ github.ref_name }}" :fetcher github :files ("buffer-wizard.el"))
+          RECIPE: (bufferwizard :repo "jamescherti/bufferwizard.el" :branch "${{ github.ref_name }}" :fetcher github :files ("bufferwizard.el"))
           EXIST_OK: false
           CASK_PATH: $HOME/.cask/bin
         run: 'echo -e "Ref: $GITHUB_REF\n$(emacs --version)" && make -C ~/melpazoid'
