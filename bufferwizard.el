@@ -23,7 +23,14 @@
 ;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; Buffer wizard
+;; The **bufferwizard** Emacs package provides a collection of helper functions
+;; and commands for managing buffers.
+;;
+;; The current version includes:
+;; - `(bufferwizard-rename-file)`: Renames the file the current buffer is
+;;   visiting. This command updates the file name on disk, adjusts the buffer
+;;   name, and updates any indirect buffers or other buffers associated with the
+;;   old file.
 
 ;;; Code:
 
@@ -35,17 +42,26 @@
           :tag "Github"
           "https://github.com/jamescherti/bufferwizard.el"))
 
+(defcustom bufferwizard-rename-file-enable-vc t
+  "If non-nil, enable renaming files using version control (VC) when available.
+When this option is enabled and the file being renamed is under VC, the renaming
+operation will be handled by the VC backend."
+  :type 'boolean
+  :group 'bufferwizard)
+
+(defcustom bufferwizard-verbose t
+  "If non-nil, display messages during file renaming operations.
+When this option is enabled, messages will indicate the progress
+and outcome of the renaming process."
+  :type 'boolean
+  :group 'bufferwizard)
+
 ;;; Helper functions
 
 (defun bufferwizard--message (&rest args)
   "Display a message with '[bufferwizard]' prepended.
 The message is formatted with the provided arguments ARGS."
   (apply #'message (concat "[bufferwizard] " (car args)) (cdr args)))
-
-(defun bufferwizard--warning (&rest args)
-  "Display a warning message with '[bufferwizard] Warning: ' prepended.
-The message is formatted with the provided arguments ARGS."
-  (apply #'message (concat "[bufferwizard] Warning: " (car args)) (cdr args)))
 
 ;;; Rename file
 
@@ -88,11 +104,14 @@ This includes indirect buffers whose names are derived from the old filename."
                           (rename-buffer new-buffer-name))))))))))))))
 
 (defun bufferwizard-rename-file ()
-  "Rename the current buffer and the file it is visiting.
-This command updates the file name on disk, adjusts the buffer name, and updates
-any indirect buffers or other buffers associated with the old file.
+  "Rename the current file that the buffer is visiting.
+This command updates:
+- The file name on disk,
+- the buffer name,
+- all the indirect buffers or other buffers associated with the old file.
 
-Hooks in `bufferwizard-after-rename-file-functions' are run after the renaming
+Hooks in `bufferwizard-before-rename-file-functions' and
+`bufferwizard-after-rename-file-functions' are run before and after the renaming
 process."
   (interactive)
   (let* ((filename (let ((buffer-file-name (buffer-base-buffer)))
@@ -101,15 +120,15 @@ process."
          (original-buffer (when filename
                             (get-file-buffer filename))))
     (unless filename
-      (error "The buffer with the name '%s' is not visiting a file"
+      (error "The buffer '%s' is not associated with a file"
              (buffer-name)))
 
     (unless (file-regular-p filename)
-      (error "The file '%s' cannot be found on the disk" filename))
+      (error "The file '%s' does not exist on disk" filename))
 
     (unless original-buffer
-      (error "Unable to find the buffer of: %s"
-             (buffer-name)))
+      (error "Could not locate the buffer for '%s'"
+             filename))
 
     (with-current-buffer original-buffer
       (when (buffer-modified-p)
@@ -120,28 +139,33 @@ process."
                            (file-name-nondirectory filename)
                          ""))
              (new-basename (read-string "New name: " basename)))
-        (when (not (string= basename new-basename))
-          (let ((new-filename (expand-file-name new-basename
-                                                (file-name-directory filename))))
+        (unless (string= basename new-basename)
+          (let ((new-filename (file-truename
+                               (expand-file-name
+                                new-basename (file-name-directory filename)))))
             (run-hook-with-args bufferwizard-before-rename-file-functions
                                 (current-buffer) filename new-filename)
 
-            (if (vc-backend filename)
+            (if (and bufferwizard-rename-file-enable-vc (vc-backend filename))
                 (progn
                   ;; Rename the file using VC
                   (vc-rename-file filename new-basename)
-                  (message "[VC RENAME] %s -> %s"
-                           filename (file-name-nondirectory new-filename)))
+                  (when bufferwizard-verbose
+                    (bufferwizard--message
+                     "[VC RENAME] %s -> %s"
+                     filename (file-name-nondirectory new-filename))))
               ;; Rename
               (rename-file filename new-filename 1)
-              (message "[RENAME] %s -> %s"
-                       filename (file-name-nondirectory new-filename)))
+              (when bufferwizard-verbose
+                (bufferwizard--message
+                 "[RENAME] %s -> %s"
+                 filename (file-name-nondirectory new-filename))))
 
             (set-visited-file-name new-filename t t)
 
             ;; Update all buffers pointing to the old file Broken
             (bufferwizard--rename-all-buffer-names filename
-                                                    new-filename)
+                                                   new-filename)
 
             (run-hook-with-args bufferwizard-after-rename-file-functions
                                 (current-buffer) filename new-filename)))))))
