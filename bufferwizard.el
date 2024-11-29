@@ -49,7 +49,7 @@ operation will be handled by the VC backend."
   :type 'boolean
   :group 'bufferwizard)
 
-(defcustom bufferwizard-verbose t
+(defcustom bufferwizard-verbose nil
   "If non-nil, display messages during file renaming operations.
 When this option is enabled, messages will indicate the progress
 and outcome of the renaming process."
@@ -114,9 +114,9 @@ Hooks in `bufferwizard-before-rename-file-functions' and
 `bufferwizard-after-rename-file-functions' are run before and after the renaming
 process."
   (interactive)
-  (let* ((filename (let ((buffer-file-name (buffer-base-buffer)))
-                     (when buffer-file-name
-                       (file-truename buffer-file-name))))
+  (let* ((filename (let ((file-name (buffer-file-name (buffer-base-buffer))))
+                     (when file-name
+                       (file-truename file-name))))
          (original-buffer (when filename
                             (get-file-buffer filename))))
     (unless filename
@@ -143,13 +143,14 @@ process."
           (let ((new-filename (file-truename
                                (expand-file-name
                                 new-basename (file-name-directory filename)))))
-            (run-hook-with-args bufferwizard-before-rename-file-functions
+            (run-hook-with-args 'bufferwizard-before-rename-file-functions
                                 (current-buffer) filename new-filename)
 
-            (if (and bufferwizard-rename-file-enable-vc (vc-backend filename))
+            (if (and bufferwizard-rename-file-enable-vc
+                     (vc-backend filename))
                 (progn
                   ;; Rename the file using VC
-                  (vc-rename-file filename new-basename)
+                  (vc-rename-file filename new-filename)
                   (when bufferwizard-verbose
                     (bufferwizard--message
                      "[VC RENAME] %s -> %s"
@@ -167,7 +168,7 @@ process."
             (bufferwizard--rename-all-buffer-names filename
                                                    new-filename)
 
-            (run-hook-with-args bufferwizard-after-rename-file-functions
+            (run-hook-with-args 'bufferwizard-after-rename-file-functions
                                 (current-buffer) filename new-filename)))))))
 
 (provide 'bufferwizard)
