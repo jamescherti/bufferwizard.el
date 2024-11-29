@@ -3,7 +3,10 @@
 ![License](https://img.shields.io/github/license/jamescherti/buffer-wizard.el)
 ![](https://raw.githubusercontent.com/jamescherti/buffer-wizard.el/main/.images/made-for-gnu-emacs.svg)
 
-Buffer wizard
+The **buffer-wizard** Emacs package provides a collection of helper functions and commands for managing buffers.
+
+The current version includes:
+- `(buffer-wizard-rename-file)`: Renames the current buffer and the file it is visiting. This command updates the file name on disk, adjusts the buffer name, and updates any indirect buffers or other buffers associated with the old file.
 
 ## Installation
 
