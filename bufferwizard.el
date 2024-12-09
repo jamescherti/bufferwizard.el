@@ -157,14 +157,14 @@ process."
                   (vc-rename-file filename new-filename)
                   (when bufferwizard-verbose
                     (bufferwizard--message
-                     "[VC RENAME] %s -> %s"
+                     "VC Rename: %s -> %s"
                      filename (file-name-nondirectory new-filename))))
               ;; Rename
               (rename-file filename new-filename 1)
               (when bufferwizard-verbose
-                (bufferwizard--message
-                 "[RENAME] %s -> %s"
-                 filename (file-name-nondirectory new-filename))))
+                (bufferwizard--message "Rename: %s -> %s"
+                                       filename
+                                       (file-name-nondirectory new-filename))))
 
             (set-visited-file-name new-filename t t)
 
@@ -200,11 +200,11 @@ process."
   (let* ((buffer (or buffer (current-buffer)))
          (filename nil))
     (unless (buffer-live-p buffer)
-      (error "Buffer '%s' is not alive" (buffer-name buffer)))
+      (error "The buffer '%s' is not alive" (buffer-name buffer)))
 
     (setq filename (buffer-file-name (or (buffer-base-buffer buffer) buffer)))
     (unless filename
-      (error "Buffer '%s' is not visiting a file" (buffer-name buffer)))
+      (error "The buffer '%s' is not visiting a file" (buffer-name buffer)))
     (setq filename (file-truename filename))
 
     (let ((list-buffers nil))
@@ -222,15 +222,14 @@ process."
 
         (dolist (buf list-buffers)
           (when (buffer-modified-p buf)
-            (let ((save-silently t))
-              (save-buffer buf)))
+            (error "The buffer '%s' has not been saved yet" buf))
           (kill-buffer buf))
 
         (if (file-exists-p filename)
             (delete-file filename))
 
         (when bufferwizard-verbose
-          (message "[Deleted] %s" filename))
+          (bufferwizard--message "Deleted: %s" filename))
 
         (run-hook-with-args 'bufferwizard-after-delete-file-functions
                             list-buffers filename)))))
