@@ -7,6 +7,7 @@ The **bufferwizard** Emacs package provides a collection of helper functions and
 
 The current version includes:
 - `(bufferwizard-rename-file)`: Renames the file that the current buffer is visiting. This command updates the file name on disk, adjusts the buffer name, and updates any indirect buffers or other buffers associated with the old file.
+- `(bufferwizard-delete-file)`: Delete the file associated with a buffer and kill all buffers visiting the file, including indirect buffers or clones.
 
 ## Installation
 
@@ -19,6 +20,8 @@ To install `bufferwizard` with `straight.el`:
 ```emacs-lisp
 (use-package bufferwizard
   :ensure t
+  :commands (bufferwizard-rename-file
+             bufferwizard-delete-file)
   :straight (bufferwizard
              :type git
              :host github
@@ -32,6 +35,8 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 ``` emacs-lisp
 (use-package bufferwizard
   :demand t
+  :commands (bufferwizard-rename-file
+             bufferwizard-delete-file)
   :vc (:url "https://github.com/jamescherti/bufferwizard.el"
        :rev :newest))
 ```

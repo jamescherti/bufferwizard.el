@@ -26,11 +26,13 @@
 ;; The **bufferwizard** Emacs package provides a collection of helper functions
 ;; and commands for managing buffers.
 ;;
-;; The current version includes:
-;; - `(bufferwizard-rename-file)`: Renames the file the current buffer is
+;; The current version includes the following functions:
+;; - `bufferwizard-rename-file': Renames the file the current buffer is
 ;;   visiting. This command updates the file name on disk, adjusts the buffer
 ;;   name, and updates any indirect buffers or other buffers associated with the
 ;;   old file.
+;; - `bufferwizard-delete-file': Delete the file associated with a buffer and
+;;   kill all buffers visiting the file,including indirect buffers or clones.
 
 ;;; Code:
 
@@ -103,8 +105,8 @@ This includes indirect buffers whose names are derived from the old filename."
                         (when new-buffer-name
                           (rename-buffer new-buffer-name))))))))))))))
 
-(defun bufferwizard-rename-file ()
-  "Rename the current file that the buffer is visiting.
+(defun bufferwizard-rename-file (&optional buffer)
+  "Rename the current file of that BUFFER is visiting.
 This command updates:
 - The file name on disk,
 - the buffer name,
@@ -114,6 +116,8 @@ Hooks in `bufferwizard-before-rename-file-functions' and
 `bufferwizard-after-rename-file-functions' are run before and after the renaming
 process."
   (interactive)
+  (unless buffer
+    (setq buffer (current-buffer)))
   (let* ((filename (let ((file-name (buffer-file-name (buffer-base-buffer))))
                      (when file-name
                        (file-truename file-name))))
@@ -172,4 +176,45 @@ process."
                                 (current-buffer) filename new-filename)))))))
 
 (provide 'bufferwizard)
+
+;;; Delete file
+
+(defun bufferwizard-delete-file (&optional buffer)
+  "Kill BUFFER and delete file associated with it.
+Delete the file associated with a buffer and kill all buffers visiting the file,
+including indirect buffers or clones.
+If BUFFER is nil, operate on the current buffer."
+  (interactive)
+  (let* ((buffer (or buffer (current-buffer)))
+         (filename nil))
+    (unless (buffer-live-p buffer)
+      (error "Buffer '%s' is not alive" (buffer-name buffer)))
+
+    (setq filename (buffer-file-name (or (buffer-base-buffer buffer) buffer)))
+    (unless filename
+      (error "Buffer '%s' is not visiting a file" (buffer-name buffer)))
+    (setq filename (file-truename filename))
+
+    (when (y-or-n-p (format "Delete file '%s'?"
+                            (file-name-nondirectory filename)))
+      (when (buffer-modified-p buffer)
+        (let ((save-silently t))
+          (save-buffer buffer)))
+
+      ;; Delete the file associated with BUFFER (clones / indirect buffers)
+      (dolist (buf (buffer-list))
+        (when
+            (and (buffer-file-name buf)
+                 (string-equal filename
+                               (file-truename
+                                (buffer-file-name
+                                 (or (buffer-base-buffer buf) buf)))))
+          (kill-buffer buf)))
+
+      (if (file-exists-p filename)
+          (delete-file filename))
+
+      (when bufferwizard-verbose
+        (message "[Deleted] %s" filename)))))
+
 ;;; bufferwizard.el ends here
