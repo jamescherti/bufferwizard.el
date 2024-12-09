@@ -179,11 +179,23 @@ process."
 
 ;;; Delete file
 
+(defvar bufferwizard-before-delete-file-functions nil
+  "List of functions to run before deleting a file.
+Each function takes 2 argument: (list-buffer path).")
+
+(defvar bufferwizard-after-delete-file-functions nil
+  "List of functions to run after deleting a file.
+Each function takes 2 argument: (list-buffer path).")
+
 (defun bufferwizard-delete-file (&optional buffer)
   "Kill BUFFER and delete file associated with it.
 Delete the file associated with a buffer and kill all buffers visiting the file,
 including indirect buffers or clones.
-If BUFFER is nil, operate on the current buffer."
+If BUFFER is nil, operate on the current buffer.
+
+Hooks in `bufferwizard-before-delete-file-functions' and
+`bufferwizard-after-delete-file-functions' are run before and after the renaming
+process."
   (interactive)
   (let* ((buffer (or buffer (current-buffer)))
          (filename nil))
@@ -195,26 +207,32 @@ If BUFFER is nil, operate on the current buffer."
       (error "Buffer '%s' is not visiting a file" (buffer-name buffer)))
     (setq filename (file-truename filename))
 
-    (when (y-or-n-p (format "Delete file '%s'?"
-                            (file-name-nondirectory filename)))
-      (when (buffer-modified-p buffer)
-        (let ((save-silently t))
-          (save-buffer buffer)))
+    (let ((list-buffers nil))
+      (when (y-or-n-p (format "Delete file '%s'?"
+                              (file-name-nondirectory filename)))
+        (dolist (buf (buffer-list))
+          (let* ((buf (or (buffer-base-buffer buf) buf))
+                 (buf-filename (when buf (buffer-file-name buf))))
+            (when (and buf-filename
+                       (string-equal filename (file-truename buf-filename)))
+              (push buf list-buffers))))
 
-      ;; Delete the file associated with BUFFER (clones / indirect buffers)
-      (dolist (buf (buffer-list))
-        (when
-            (and (buffer-file-name buf)
-                 (string-equal filename
-                               (file-truename
-                                (buffer-file-name
-                                 (or (buffer-base-buffer buf) buf)))))
-          (kill-buffer buf)))
+        (run-hook-with-args 'bufferwizard-before-delete-file-functions
+                            list-buffers filename)
 
-      (if (file-exists-p filename)
-          (delete-file filename))
+        (dolist (buf list-buffers)
+          (when (buffer-modified-p buf)
+            (let ((save-silently t))
+              (save-buffer buf)))
+          (kill-buffer buf))
 
-      (when bufferwizard-verbose
-        (message "[Deleted] %s" filename)))))
+        (if (file-exists-p filename)
+            (delete-file filename))
+
+        (when bufferwizard-verbose
+          (message "[Deleted] %s" filename))
+
+        (run-hook-with-args 'bufferwizard-after-delete-file-functions
+                            list-buffers filename)))))
 
 ;;; bufferwizard.el ends here
