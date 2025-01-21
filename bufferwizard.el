@@ -1,6 +1,6 @@
 ;;; bufferwizard.el --- Buffer wizard  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024 James Cherti | https://www.jamescherti.com/contact/
+;; Copyright (C) 2024-2025 James Cherti | https://www.jamescherti.com/contact/
 
 ;; Author: James Cherti
 ;; Version: 0.9.9
