@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/github/license/jamescherti/bufferwizard.el)
 ![](https://raw.githubusercontent.com/jamescherti/bufferwizard.el/main/.images/made-for-gnu-emacs.svg)
 
-The **bufferwizard** Emacs package provides a collection of helper functions and commands for managing buffers.
+The **bufferwizard** Emacs package offers a suite of helper functions, including efficient tools for deleting and renaming files. It also ensures that all associated buffers, including indirect buffers, are properly handled during these operations.
 
 The current version includes:
 - `(bufferwizard-rename-file)`: Renames the file that the current buffer is visiting. This command updates the file name on disk, adjusts the buffer name, and updates any indirect buffers or other buffers associated with the old file.
