@@ -44,10 +44,10 @@
           :tag "Github"
           "https://github.com/jamescherti/bufferwizard.el"))
 
-(defcustom bufferwizard-rename-file-enable-vc t
-  "If non-nil, enable renaming files using version control (VC) when available.
-When this option is enabled and the file being renamed is under VC, the renaming
-operation will be handled by the VC backend."
+(defcustom bufferwizard-use-vc t
+  "If non-nil, enable using version control (VC) when available.
+When this option is enabled and the file being deleted or renamed is under VC,
+the renaming operation will be handled by the VC backend."
   :type 'boolean
   :group 'bufferwizard)
 
@@ -158,7 +158,7 @@ process."
             (run-hook-with-args 'bufferwizard-before-rename-file-functions
                                 (current-buffer) filename new-filename)
 
-            (if (and bufferwizard-rename-file-enable-vc
+            (if (and bufferwizard-use-vc
                      (vc-backend filename))
                 (progn
                   ;; Rename the file using VC
@@ -224,7 +224,9 @@ process."
           (kill-buffer buf))
 
         (if (file-exists-p filename)
-            (delete-file filename))
+            (if bufferwizard-use-vc
+                (vc-delete-file filename)
+              (delete-file filename)))
 
         (when bufferwizard-verbose
           (bufferwizard--message "Deleted: %s" filename))
