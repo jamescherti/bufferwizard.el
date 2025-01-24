@@ -6,7 +6,7 @@
 ;; Version: 0.9.9
 ;; URL: https://github.com/jamescherti/bufferwizard.el
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -35,6 +35,8 @@
 ;;   kill all buffers visiting the file,including indirect buffers or clones.
 
 ;;; Code:
+
+(require 'cl-lib)
 
 (defgroup bufferwizard nil
   "Buffer wizard."
@@ -224,8 +226,11 @@ process."
           (kill-buffer buf))
 
         (if (file-exists-p filename)
-            (if bufferwizard-use-vc
-                (vc-delete-file filename)
+            (if (and bufferwizard-use-vc
+                     (vc-backend filename))
+                (cl-letf (((symbol-function 'y-or-n-p)
+                           (lambda (&rest _args) t)))
+                  (vc-delete-file filename))
               (delete-file filename)))
 
         (when bufferwizard-verbose
