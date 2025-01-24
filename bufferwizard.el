@@ -236,19 +236,19 @@ process."
           (when (buffer-modified-p buf)
             (error "The buffer '%s' has not been saved yet" buf)))
 
-        (dolist (buf list-buffers)
-          (kill-buffer buf))
-
         (run-hook-with-args 'bufferwizard-before-delete-file-functions
                             list-buffers filename)
 
-        (if (file-exists-p filename)
-            (if (and bufferwizard-use-vc
-                     (vc-backend filename))
-                (cl-letf (((symbol-function 'y-or-n-p)
-                           (lambda (&rest _args) t)))
-                  (vc-delete-file filename))
-              (delete-file filename)))
+        (dolist (buf list-buffers)
+          (kill-buffer buf))
+
+        (when (file-exists-p filename)
+          (if (and bufferwizard-use-vc
+                   (vc-backend filename))
+              (cl-letf (((symbol-function 'y-or-n-p)
+                         (lambda (&rest _args) t)))
+                (vc-delete-file filename))
+            (delete-file filename)))
 
         (when bufferwizard-verbose
           (bufferwizard--message "Deleted: %s" filename))
