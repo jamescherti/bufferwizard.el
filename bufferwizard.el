@@ -97,8 +97,8 @@ Returns a list of buffers that are associated with FILENAME."
         (list-buffers nil))
     (dolist (buf (buffer-list))
       (when (buffer-live-p buf)
-        (let* ((buf (or (buffer-base-buffer buf) buf))
-               (buf-filename (when buf (buffer-file-name buf))))
+        (let* ((base-buf (or (buffer-base-buffer buf) buf))
+               (buf-filename (when base-buf (buffer-file-name base-buf))))
           (when (and buf-filename
                      (string-equal filename (file-truename buf-filename)))
             (push buf list-buffers)))))
