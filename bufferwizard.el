@@ -62,19 +62,19 @@ and outcome of the renaming process."
 
 (defvar bufferwizard-before-rename-file-functions nil
   "List of functions to run before renaming a file.
-Each function takes 3 argument: (buffer previous-path new-path).")
+Each function takes 3 argument: (list-buffers previous-path new-path).")
 
 (defvar bufferwizard-after-rename-file-functions nil
   "List of functions to run after renaming a file.
-Each function takes 3 argument: (buffer previous-path new-path).")
+Each function takes 3 argument: (list-buffers previous-path new-path).")
 
 (defvar bufferwizard-before-delete-file-functions nil
   "List of functions to run before deleting a file.
-Each function takes 2 argument: (list-buffer path).")
+Each function takes 2 argument: (list-buffers path).")
 
 (defvar bufferwizard-after-delete-file-functions nil
   "List of functions to run after deleting a file.
-Each function takes 2 argument: (list-buffer path).")
+Each function takes 2 argument: (list-buffers path).")
 
 ;;; Helper functions
 
@@ -173,13 +173,14 @@ process."
       (let* ((basename (if filename
                            (file-name-nondirectory filename)
                          ""))
-             (new-basename (read-string "New name: " basename)))
+             (new-basename (read-string "New name: " basename))
+             (list-buffers (bufferwizard--get-list-buffers filename)))
         (unless (string= basename new-basename)
           (let ((new-filename (file-truename
                                (expand-file-name
                                 new-basename (file-name-directory filename)))))
             (run-hook-with-args 'bufferwizard-before-rename-file-functions
-                                (current-buffer) filename new-filename)
+                                list-buffers filename new-filename)
 
             (if (and bufferwizard-use-vc
                      (vc-backend filename))
@@ -204,7 +205,7 @@ process."
                                                    new-filename)
 
             (run-hook-with-args 'bufferwizard-after-rename-file-functions
-                                (current-buffer) filename new-filename)))))))
+                                list-buffers filename new-filename)))))))
 
 ;;; Delete file
 
