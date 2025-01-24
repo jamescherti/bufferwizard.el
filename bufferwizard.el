@@ -58,6 +58,22 @@ and outcome of the renaming process."
   :type 'boolean
   :group 'bufferwizard)
 
+(defvar bufferwizard-before-rename-file-functions nil
+  "List of functions to run before renaming a file.
+Each function takes 3 argument: (buffer previous-path new-path).")
+
+(defvar bufferwizard-after-rename-file-functions nil
+  "List of functions to run after renaming a file.
+Each function takes 3 argument: (buffer previous-path new-path).")
+
+(defvar bufferwizard-before-delete-file-functions nil
+  "List of functions to run before deleting a file.
+Each function takes 2 argument: (list-buffer path).")
+
+(defvar bufferwizard-after-delete-file-functions nil
+  "List of functions to run after deleting a file.
+Each function takes 2 argument: (list-buffer path).")
+
 ;;; Helper functions
 
 (defun bufferwizard--message (&rest args)
@@ -66,14 +82,6 @@ The message is formatted with the provided arguments ARGS."
   (apply #'message (concat "[bufferwizard] " (car args)) (cdr args)))
 
 ;;; Rename file
-
-(defvar bufferwizard-before-rename-file-functions nil
-  "List of functions to run before renaming a file.
-Each function takes 3 argument: (buffer previous-path new-path).")
-
-(defvar bufferwizard-after-rename-file-functions nil
-  "List of functions to run after renaming a file.
-Each function takes 3 argument: (buffer previous-path new-path).")
 
 (defun bufferwizard--rename-all-buffer-names (old-filename new-filename)
   "Update buffer names to reflect the renaming of a file.
@@ -175,17 +183,7 @@ process."
             (run-hook-with-args 'bufferwizard-after-rename-file-functions
                                 (current-buffer) filename new-filename)))))))
 
-(provide 'bufferwizard)
-
 ;;; Delete file
-
-(defvar bufferwizard-before-delete-file-functions nil
-  "List of functions to run before deleting a file.
-Each function takes 2 argument: (list-buffer path).")
-
-(defvar bufferwizard-after-delete-file-functions nil
-  "List of functions to run after deleting a file.
-Each function takes 2 argument: (list-buffer path).")
 
 (defun bufferwizard-delete-file (&optional buffer)
   "Kill BUFFER and delete file associated with it.
@@ -234,4 +232,5 @@ process."
         (run-hook-with-args 'bufferwizard-after-delete-file-functions
                             list-buffers filename)))))
 
+(provide 'bufferwizard)
 ;;; bufferwizard.el ends here
