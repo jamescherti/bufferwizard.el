@@ -83,6 +83,27 @@ Each function takes 2 argument: (list-buffer path).")
 The message is formatted with the provided arguments ARGS."
   (apply #'message (concat "[bufferwizard] " (car args)) (cdr args)))
 
+(defun bufferwizard--get-list-buffers (filename)
+  "Return a list of buffers visiting the specified FILENAME.
+
+FILENAME is the absolute path of the file to check for associated buffers.
+
+Iterates through all buffers and performs the following check: If a buffer is
+visiting the specified FILENAME (based on the true file path), it is added to
+the resulting list.
+
+Returns a list of buffers that are associated with FILENAME."
+  (let ((filename (file-truename filename))
+        (list-buffers nil))
+    (dolist (buf (buffer-list))
+      (when (buffer-live-p buf)
+        (let* ((buf (or (buffer-base-buffer buf) buf))
+               (buf-filename (when buf (buffer-file-name buf))))
+          (when (and buf-filename
+                     (string-equal filename (file-truename buf-filename)))
+            (push buf list-buffers)))))
+    list-buffers))
+
 ;;; Rename file
 
 (defun bufferwizard--rename-all-buffer-names (old-filename new-filename)
@@ -207,23 +228,18 @@ process."
       (error "The buffer '%s' is not visiting a file" (buffer-name buffer)))
     (setq filename (file-truename filename))
 
-    (let ((list-buffers nil))
-      (when (y-or-n-p (format "Delete file '%s'?"
-                              (file-name-nondirectory filename)))
-        (dolist (buf (buffer-list))
-          (let* ((buf (or (buffer-base-buffer buf) buf))
-                 (buf-filename (when buf (buffer-file-name buf))))
-            (when (and buf-filename
-                       (string-equal filename (file-truename buf-filename)))
-              (push buf list-buffers))))
+    (when (y-or-n-p (format "Delete file '%s'?"
+                            (file-name-nondirectory filename)))
+      (let ((list-buffers (bufferwizard--get-list-buffers filename)))
+        (dolist (buf list-buffers)
+          (when (buffer-modified-p buf)
+            (error "The buffer '%s' has not been saved yet" buf)))
+
+        (dolist (buf list-buffers)
+          (kill-buffer buf))
 
         (run-hook-with-args 'bufferwizard-before-delete-file-functions
                             list-buffers filename)
-
-        (dolist (buf list-buffers)
-          (when (buffer-modified-p buf)
-            (error "The buffer '%s' has not been saved yet" buf))
-          (kill-buffer buf))
 
         (if (file-exists-p filename)
             (if (and bufferwizard-use-vc
