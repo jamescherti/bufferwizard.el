@@ -21,8 +21,6 @@ To install `bufferwizard` with `straight.el`:
 ```emacs-lisp
 (use-package bufferwizard
   :ensure t
-  :commands (bufferwizard-rename-file
-             bufferwizard-delete-file)
   :straight (bufferwizard
              :type git
              :host github
@@ -36,8 +34,6 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 ``` emacs-lisp
 (use-package bufferwizard
   :demand t
-  :commands (bufferwizard-rename-file
-             bufferwizard-delete-file)
   :vc (:url "https://github.com/jamescherti/bufferwizard.el"
        :rev :newest))
 ```
