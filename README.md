@@ -4,11 +4,11 @@
 ![](https://raw.githubusercontent.com/jamescherti/bufferwizard.el/main/.images/made-for-gnu-emacs.svg)
 
 The **bufferwizard** Emacs package offers a suite of helper functions:
+- `(bufferwizard-toggle-highlight-symbol-at-point)`: Toggle highlighting for the symbol at point. This function checks if the symbol at point is currently highlighted. If it is, it removes the highlight; otherwise, it applies the highlight.
+- `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
 - `(bufferwizard-rename-file)`: Renames the file that the current buffer is visiting. This command updates the file name on disk, adjusts the buffer name, and updates any indirect buffers or other buffers associated with the old file.
 - `(bufferwizard-delete-file)`: Delete the file associated with a buffer and kill all buffers visiting the file, including indirect buffers or clones.
 - `(bufferwizard-clear-highlights)`: Clear highlights and related state in the buffer (e.g., clear lazy highlights).
-- `(bufferwizard-toggle-highlight-symbol-at-point)`: Toggle highlighting for the symbol at point. This function checks if the symbol at point is currently highlighted. If it is, it removes the highlight; otherwise, it applies the highlight.
-- `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
 
 ## Installation
 
