@@ -6,7 +6,7 @@
 ;; Version: 1.0.0
 ;; URL: https://github.com/jamescherti/bufferwizard.el
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "24.4"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -37,6 +37,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'hi-lock)
 
 (defgroup bufferwizard nil
   "Buffer wizard."
@@ -136,6 +137,7 @@ This includes indirect buffers whose names are derived from the old filename."
                         (when new-buffer-name
                           (rename-buffer new-buffer-name))))))))))))))
 
+;;;###autoload
 (defun bufferwizard-rename-file (&optional buffer)
   "Rename the current file of that BUFFER is visiting.
 This command updates:
@@ -209,6 +211,7 @@ process."
 
 ;;; Delete file
 
+;;;###autoload
 (defun bufferwizard-delete-file (&optional buffer)
   "Kill BUFFER and delete file associated with it.
 Delete the file associated with a buffer and kill all buffers visiting the file,
@@ -255,6 +258,128 @@ process."
 
         (run-hook-with-args 'bufferwizard-after-delete-file-functions
                             list-buffers filename)))))
+
+;;; Helpers
+
+(defun bufferwizard--symbol-at-point-regexp ()
+  "Return a regexp that matches the symbol at point."
+  (let ((symbol (thing-at-point 'symbol t)))
+    (when symbol
+      ;; This returns
+      (concat "\\_<" (regexp-quote symbol) "\\_>"))))
+
+;;; Replace occurences (string)
+
+(defun bufferwizard-replace-regexp (from-regexp &optional to-string)
+  "Replace occurrences of FROM-REGEXP with TO-STRING.
+When TO-STRING is not specified, the user is prompted for input.
+This function confirms each replacement."
+  ;; Make sure it scrolls
+  (let ((orig-window-start (window-start))
+        (scroll-conservatively 10))
+    (save-excursion
+      (let ((undo-handle (prepare-change-group))
+            (start (point))
+            (case-replace t) ; Smart
+            (case-fold-search t))
+        (unwind-protect
+            (progn
+              ;; Replace from the current position
+              (query-replace-regexp from-regexp to-string nil start (point-max))
+
+              ;; Replace from the beginning
+              (when (> start (point-min))
+                (query-replace-regexp
+                 from-regexp to-string nil (point-min) (1- start))))
+          (undo-amalgamate-change-group undo-handle))))
+    (set-window-start nil orig-window-start)))
+
+;;;###autoload
+(defun bufferwizard-replace-symbol-at-point (&optional to-string)
+  "Replace occurrences of a symbol at point with a specified string.
+When TO-STRING is not specified, the user is prompted for input.
+This function confirms each replacement."
+  (interactive)
+  (let ((symbol nil)
+        (symbol-start nil))
+    (if (use-region-p)
+        ;; Region
+        (progn
+          (setq symbol
+                (buffer-substring-no-properties (region-beginning) (region-end)))
+          (setq symbol-start (region-beginning))
+          (when symbol
+            (deactivate-mark)))
+      ;; Not a region
+      (setq symbol (thing-at-point 'symbol t))
+      (setq symbol-start (car (bounds-of-thing-at-point 'symbol))))
+    ;; Ask the user
+    (when symbol
+      (let ((symbol-regexp (bufferwizard--symbol-at-point-regexp)))
+        (unwind-protect
+            (progn
+              (highlight-regexp symbol-regexp 'lazy-highlight)
+              (unless to-string
+                (setq to-string
+                      (read-string (format "Replace '%s' with: " symbol) symbol))))
+          (unhighlight-regexp symbol-regexp))
+        ;; Replace
+        (goto-char symbol-start)
+        (bufferwizard-replace-regexp symbol-regexp to-string)))))
+
+;;; Highlight symbols
+
+(defun bufferwizard-highlight-p ()
+  "Return non-nil the symbol at point is currently highlighted."
+  (let ((list-regexp-at-point
+         (or (hi-lock--regexps-at-point)
+             (mapcar (lambda (pattern)
+                       (or (car (rassq pattern hi-lock-interactive-lighters))
+                           (car pattern)))
+                     hi-lock-interactive-patterns))))
+    (member (bufferwizard--symbol-at-point-regexp)
+            list-regexp-at-point)))
+
+;;;###autoload
+(defun bufferwizard-highlight-symbol-at-point ()
+  "Highlight the symbol at point in the current buffer.
+
+This function identifies the symbol at the current point, generates the
+appropriate regular expression for it, and applies highlighting using the
+built-in `hi-lock' package."
+  (interactive)
+  (cl-letf (((symbol-function 'find-tag-default-as-symbol-regexp)
+             #'(lambda ()
+                 (bufferwizard--symbol-at-point-regexp))))
+    (hi-lock-face-symbol-at-point)))
+
+;;;###autoload
+(defun bufferwizard-unhighlight-symbol-at-point ()
+  "Remove highlighting for the symbol at point."
+  (interactive)
+  (let ((regexp (bufferwizard--symbol-at-point-regexp)))
+    (when regexp
+      (hi-lock-unface-buffer regexp))))
+
+;;;###autoload
+(defun bufferwizard-toggle-highlight-symbol-at-point ()
+  "Toggle highlighting for the symbol at point.
+
+This function checks if the symbol at point is currently highlighted.
+If it is, it removes the highlight; otherwise, it applies the highlight."
+  (interactive)
+  (if (bufferwizard-highlight-p)
+      (bufferwizard-unhighlight-symbol-at-point)
+    (bufferwizard-highlight-symbol-at-point)))
+
+;;;###autoload
+(defun bufferwizard-unhighlight ()
+  "Remove highlighting of each match to REGEXP.
+Interactively, prompt for REGEXP, accepting only regexps previously inserted by
+hi-lock interactive functions. If REGEXP is t (or if \\[universal-argument] was
+specified interactively), then remove all hi-lock highlighting."
+  (interactive)
+  (call-interactively 'hi-lock-unface-buffer))
 
 (provide 'bufferwizard)
 ;;; bufferwizard.el ends here
