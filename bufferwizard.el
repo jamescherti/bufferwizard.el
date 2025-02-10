@@ -369,8 +369,8 @@ This function confirms each replacement."
               (when (> start (point-min))
                 (query-replace-regexp
                  from-regexp to-string nil (point-min) (1- start))))
-          (undo-amalgamate-change-group undo-handle))))
-    (set-window-start nil orig-window-start)))
+          (undo-amalgamate-change-group undo-handle)
+          (set-window-start nil orig-window-start))))))
 
 ;;;###autoload
 (defun bufferwizard-replace-symbol-at-point (&optional to-string)
