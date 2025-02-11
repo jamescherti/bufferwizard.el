@@ -373,37 +373,48 @@ This function confirms each replacement."
           (set-window-start nil orig-window-start))))))
 
 ;;;###autoload
-(defun bufferwizard-replace-symbol-at-point (&optional to-string)
+(defun bufferwizard-replace-string-at-point (&optional to-string)
   "Replace occurrences of a symbol at point with a specified string.
 When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
   (interactive)
-  (let ((symbol nil)
-        (symbol-start nil))
+  (let ((region nil)
+        (from-string nil)
+        (string-start nil)
+        (string-regexp))
     (if (use-region-p)
         ;; Region
         (progn
-          (setq symbol
-                (buffer-substring-no-properties (region-beginning) (region-end)))
-          (setq symbol-start (region-beginning))
-          (when symbol
+          (setq region t)
+          (setq from-string
+                (buffer-substring-no-properties (region-beginning)
+                                                (region-end)))
+          (setq string-start (region-beginning))
+          (when from-string
             (deactivate-mark)))
       ;; Not a region
-      (setq symbol (thing-at-point 'symbol t))
-      (setq symbol-start (car (bounds-of-thing-at-point 'symbol))))
+      (setq from-string (thing-at-point 'symbol t))
+      (setq string-start (car (bounds-of-thing-at-point 'symbol))))
+    ;; Generate the regular expression
+    (if region
+        (setq string-regexp (regexp-quote from-string))
+      (setq string-regexp (bufferwizard--symbol-at-point-regexp)))
     ;; Ask the user
-    (when symbol
-      (let ((symbol-regexp (bufferwizard--symbol-at-point-regexp)))
-        (unwind-protect
-            (progn
-              (highlight-regexp symbol-regexp 'lazy-highlight)
-              (unless to-string
-                (setq to-string
-                      (read-string (format "Replace '%s' with: " symbol) symbol))))
-          (unhighlight-regexp symbol-regexp))
-        ;; Replace
-        (goto-char symbol-start)
-        (bufferwizard-replace-regexp symbol-regexp to-string)))))
+    (when from-string
+      (unwind-protect
+          (progn
+            (highlight-regexp string-regexp 'lazy-highlight)
+            (unless to-string
+              (setq to-string
+                    (read-string (format "Replace '%s' with: " string-regexp)
+                                 from-string))
+              (if region
+                  (setq string-regexp (regexp-quote from-string))
+                (setq string-regexp (bufferwizard--symbol-at-point-regexp)))))
+        (unhighlight-regexp string-regexp))
+      ;; Replace
+      (goto-char string-start)
+      (bufferwizard-replace-regexp string-regexp to-string))))
 
 ;;; Highlight symbols
 
