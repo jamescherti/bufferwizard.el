@@ -391,13 +391,11 @@ This function confirms each replacement."
                                                 (region-end)))
           (setq string-start (region-beginning))
           (when from-string
-            (deactivate-mark)))
+            (deactivate-mark))
+          (setq string-regexp (regexp-quote from-string)))
       ;; Not a region
       (setq from-string (thing-at-point 'symbol t))
-      (setq string-start (car (bounds-of-thing-at-point 'symbol))))
-    ;; Generate the regular expression
-    (if region
-        (setq string-regexp (regexp-quote from-string))
+      (setq string-start (car (bounds-of-thing-at-point 'symbol)))
       (setq string-regexp (bufferwizard--symbol-at-point-regexp)))
     ;; Ask the user
     (when from-string
