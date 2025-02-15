@@ -206,6 +206,20 @@ process."
             (bufferwizard--rename-all-buffer-names filename
                                                    new-filename)
 
+            (dolist (buf list-buffers)
+              (with-current-buffer buf
+                ;; Eglot checkers fail when files are renamed because they
+                (when (and (fboundp 'eglot-current-server)
+                           (fboundp 'eglot-shutdown)
+                           (fboundp 'eglot-managed-p)
+                           (eglot-managed-p))
+                  (let ((server (eglot-current-server)))
+                    (when server
+                      ;; Restart eglot
+                      (let ((inhibit-message t))
+                        (eglot-shutdown server))
+                      (eglot-ensure))))))
+
             (run-hook-with-args 'bufferwizard-after-rename-file-functions
                                 list-buffers filename new-filename)))))))
 
@@ -232,28 +246,51 @@ process."
       (error "The buffer '%s' is not visiting a file" (buffer-name buffer)))
     (setq filename (file-truename filename))
 
-    (when (y-or-n-p (format "Delete file '%s'?"
-                            (file-name-nondirectory filename)))
+    (when (yes-or-no-p (format "Delete file '%s'?"
+                               (file-name-nondirectory filename)))
       (let ((vc-managed-file (vc-backend filename))
             (list-buffers (bufferwizard--get-list-buffers filename)))
         (dolist (buf list-buffers)
-          (when (buffer-modified-p buf)
-            (error "The buffer '%s' has not been saved yet" buf)))
+          (with-current-buffer buf
+            (when (buffer-modified-p)
+              (let ((save-silently t))
+                (save-buffer)))))
 
         (run-hook-with-args 'bufferwizard-before-delete-file-functions
                             list-buffers filename)
 
+        ;; Special cases
         (dolist (buf list-buffers)
-          (when vc-managed-file
-            (with-current-buffer buf (vc-revert)))
+          (with-current-buffer buf
+            (when (and (fboundp 'eglot-current-server)
+                       (fboundp 'eglot-shutdown)
+                       (fboundp 'eglot-managed-p)
+                       (eglot-managed-p))
+              (let ((server (eglot-current-server)))
+                (when server
+                  ;; Do not display errors such as:
+                  ;; [jsonrpc] (warning) Sentinel for EGLOT
+                  ;; (ansible-unused/(python-mode python-ts-mode)) still hasn't
+                  ;; run, deleting it!
+                  ;; [jsonrpc] Server exited with status 9
+                  (let ((inhibit-message t))
+                    (eglot-shutdown server))))))
           (kill-buffer buf))
 
         (when (file-exists-p filename)
           (if (and bufferwizard-use-vc
                    vc-managed-file)
-              (cl-letf (((symbol-function 'y-or-n-p)
+              (cl-letf (((symbol-function 'yes-or-no-p)
                          (lambda (&rest _args) t)))
+                ;; Revert version control changes before killing the buffer;
+                ;; otherwise, `vc-delete-file' will fail to delete the file
+                (when (not (vc-up-to-date-p filename))
+                  (with-current-buffer buffer
+                    (vc-revert)))
+
+                ;; VC delete
                 (vc-delete-file filename))
+            ;; Delete
             (delete-file filename)))
 
         (when bufferwizard-verbose
