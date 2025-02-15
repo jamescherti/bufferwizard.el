@@ -234,7 +234,8 @@ process."
 
     (when (y-or-n-p (format "Delete file '%s'?"
                             (file-name-nondirectory filename)))
-      (let ((list-buffers (bufferwizard--get-list-buffers filename)))
+      (let ((vc-managed-file-p (vc-backend filename))
+            (list-buffers (bufferwizard--get-list-buffers filename)))
         (dolist (buf list-buffers)
           (when (buffer-modified-p buf)
             (error "The buffer '%s' has not been saved yet" buf)))
@@ -243,11 +244,13 @@ process."
                             list-buffers filename)
 
         (dolist (buf list-buffers)
+          (when vc-managed-file-p
+            (with-current-buffer buf (vc-revert)))
           (kill-buffer buf))
 
         (when (file-exists-p filename)
           (if (and bufferwizard-use-vc
-                   (vc-backend filename))
+                   vc-managed-file-p)
               (cl-letf (((symbol-function 'y-or-n-p)
                          (lambda (&rest _args) t)))
                 (vc-delete-file filename))
