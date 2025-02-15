@@ -406,8 +406,10 @@ This function confirms each replacement."
             (highlight-regexp string-regexp 'lazy-highlight)
             (unless to-string
               (setq to-string
-                    (read-string (format "Replace '%s' with: " string-regexp)
+                    (read-string (format "Replace '%s' with: " from-string)
                                  from-string))
+              ;; Update the regular expression because the user has just entered
+              ;; a new one.
               (if region
                   (setq string-regexp (regexp-quote from-string))
                 (setq string-regexp (bufferwizard--symbol-at-point-regexp)))))
