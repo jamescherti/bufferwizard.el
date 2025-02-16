@@ -25,14 +25,6 @@
 ;;; Commentary:
 ;; The **bufferwizard** Emacs package provides a collection of helper functions
 ;; and commands for managing buffers.
-;;
-;; The current version includes the following functions:
-;; - `bufferwizard-rename-file': Renames the file the current buffer is
-;;   visiting. This command updates the file name on disk, adjusts the buffer
-;;   name, and updates any indirect buffers or other buffers associated with the
-;;   old file.
-;; - `bufferwizard-delete-file': Delete the file associated with a buffer and
-;;   kill all buffers visiting the file,including indirect buffers or clones.
 
 ;;; Code:
 
@@ -149,79 +141,7 @@ Hooks in `bufferwizard-before-rename-file-functions' and
 `bufferwizard-after-rename-file-functions' are run before and after the renaming
 process."
   (interactive)
-  (unless buffer
-    (setq buffer (current-buffer)))
-  (let* ((filename (let ((file-name (buffer-file-name (buffer-base-buffer))))
-                     (when file-name
-                       (file-truename file-name))))
-         (original-buffer (when filename
-                            (get-file-buffer filename))))
-    (unless filename
-      (error "The buffer '%s' is not associated with a file"
-             (buffer-name)))
-
-    (unless (file-regular-p filename)
-      (error "The file '%s' does not exist on disk" filename))
-
-    (unless original-buffer
-      (error "Could not locate the buffer for '%s'"
-             filename))
-
-    (with-current-buffer original-buffer
-      (when (buffer-modified-p)
-        (let ((save-silently t))
-          (save-buffer)))
-
-      (let* ((basename (if filename
-                           (file-name-nondirectory filename)
-                         ""))
-             (new-basename (read-string "New name: " basename))
-             (list-buffers (bufferwizard--get-list-buffers filename)))
-        (unless (string= basename new-basename)
-          (let ((new-filename (file-truename
-                               (expand-file-name
-                                new-basename (file-name-directory filename)))))
-            (run-hook-with-args 'bufferwizard-before-rename-file-functions
-                                list-buffers filename new-filename)
-
-            (if (and bufferwizard-use-vc
-                     (vc-backend filename))
-                (progn
-                  ;; Rename the file using VC
-                  (vc-rename-file filename new-filename)
-                  (when bufferwizard-verbose
-                    (bufferwizard--message
-                     "VC Rename: %s -> %s"
-                     filename (file-name-nondirectory new-filename))))
-              ;; Rename
-              (rename-file filename new-filename 1)
-              (when bufferwizard-verbose
-                (bufferwizard--message "Rename: %s -> %s"
-                                       filename
-                                       (file-name-nondirectory new-filename))))
-
-            (set-visited-file-name new-filename t t)
-
-            ;; Update all buffers pointing to the old file Broken
-            (bufferwizard--rename-all-buffer-names filename
-                                                   new-filename)
-
-            (dolist (buf list-buffers)
-              (with-current-buffer buf
-                ;; Eglot checkers fail when files are renamed because they
-                (when (and (fboundp 'eglot-current-server)
-                           (fboundp 'eglot-shutdown)
-                           (fboundp 'eglot-managed-p)
-                           (eglot-managed-p))
-                  (let ((server (eglot-current-server)))
-                    (when server
-                      ;; Restart eglot
-                      (let ((inhibit-message t))
-                        (eglot-shutdown server))
-                      (eglot-ensure))))))
-
-            (run-hook-with-args 'bufferwizard-after-rename-file-functions
-                                list-buffers filename new-filename)))))))
+  (message "Use: https://github.com/jamescherti/bufferfile.el"))
 
 ;;; Delete file
 
@@ -236,68 +156,7 @@ Hooks in `bufferwizard-before-delete-file-functions' and
 `bufferwizard-after-delete-file-functions' are run before and after the renaming
 process."
   (interactive)
-  (let* ((buffer (or buffer (current-buffer)))
-         (filename nil))
-    (unless (buffer-live-p buffer)
-      (error "The buffer '%s' is not alive" (buffer-name buffer)))
-
-    (setq filename (buffer-file-name (or (buffer-base-buffer buffer) buffer)))
-    (unless filename
-      (error "The buffer '%s' is not visiting a file" (buffer-name buffer)))
-    (setq filename (file-truename filename))
-
-    (when (yes-or-no-p (format "Delete file '%s'?"
-                               (file-name-nondirectory filename)))
-      (let ((vc-managed-file (vc-backend filename))
-            (list-buffers (bufferwizard--get-list-buffers filename)))
-        (dolist (buf list-buffers)
-          (with-current-buffer buf
-            (when (buffer-modified-p)
-              (let ((save-silently t))
-                (save-buffer)))))
-
-        (run-hook-with-args 'bufferwizard-before-delete-file-functions
-                            list-buffers filename)
-
-        ;; Special cases
-        (dolist (buf list-buffers)
-          (with-current-buffer buf
-            (when (and (fboundp 'eglot-current-server)
-                       (fboundp 'eglot-shutdown)
-                       (fboundp 'eglot-managed-p)
-                       (eglot-managed-p))
-              (let ((server (eglot-current-server)))
-                (when server
-                  ;; Do not display errors such as:
-                  ;; [jsonrpc] (warning) Sentinel for EGLOT
-                  ;; (ansible-unused/(python-mode python-ts-mode)) still hasn't
-                  ;; run, deleting it!
-                  ;; [jsonrpc] Server exited with status 9
-                  (let ((inhibit-message t))
-                    (eglot-shutdown server))))))
-          (kill-buffer buf))
-
-        (when (file-exists-p filename)
-          (if (and bufferwizard-use-vc
-                   vc-managed-file)
-              (cl-letf (((symbol-function 'yes-or-no-p)
-                         (lambda (&rest _args) t)))
-                ;; Revert version control changes before killing the buffer;
-                ;; otherwise, `vc-delete-file' will fail to delete the file
-                (when (not (vc-up-to-date-p filename))
-                  (with-current-buffer buffer
-                    (vc-revert)))
-
-                ;; VC delete
-                (vc-delete-file filename))
-            ;; Delete
-            (delete-file filename)))
-
-        (when bufferwizard-verbose
-          (bufferwizard--message "Deleted: %s" filename))
-
-        (run-hook-with-args 'bufferwizard-after-delete-file-functions
-                            list-buffers filename)))))
+  (message "Use: https://github.com/jamescherti/bufferfile.el"))
 
 ;;; Clone indirect buffers
 
