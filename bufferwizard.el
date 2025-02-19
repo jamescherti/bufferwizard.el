@@ -206,7 +206,7 @@ Returns the newly created indirect buffer."
             (set-window-hscroll selected-window window-hscroll))))
       indirect-buffer)))
 
-(defun bufferwizard-clone-indirect-buffer-current-window (&optional newname
+(defun bufferwizard-clone-and-switch-to-indirect-buffer (&optional newname
                                                                     norecord)
   "Create an indirect buffer and switch to it.
 
