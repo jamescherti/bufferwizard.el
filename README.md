@@ -6,7 +6,7 @@
 The **bufferwizard** Emacs package offers a suite of helper functions:
 - `(bufferwizard-toggle-highlight-symbol-at-point)`: Toggle highlighting for the symbol at point. This function checks if the symbol at point is currently highlighted. If it is, it removes the highlight; otherwise, it applies the highlight. (This is a lightweight alternative to the highlight-symbol package.)
 - `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
-- `(bufferwizard-clone-indirect-buffer)` and `(bufferwizard-clone-indirect-buffer-current-window)`: These functions are enhanced versions of the built-in `clone-indirect-buffer`. They create an indirect buffer with the same content as the current buffer while preserving the point position, window start, and horizontal scroll position. Indirect buffers are useful, for example, to have different folds for the same buffer.
+- `(bufferwizard-clone-indirect-buffer)` and `(bufferwizard-clone-indirect-buffer-current-window)`: These functions are enhanced versions of the built-in `clone-indirect-buffer`. They create an indirect buffer with the same content as the current buffer while preserving the point position, window start, and horizontal scroll position. This package also provides the `(bufferwizard-switch-to-base-buffer)` function, which allows switching from an indirect buffer to its corresponding base buffer.
 
 ## Installation
 

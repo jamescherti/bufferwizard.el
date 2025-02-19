@@ -158,7 +158,7 @@ process."
   (interactive)
   (message "Use: https://github.com/jamescherti/bufferfile.el"))
 
-;;; Clone indirect buffers
+;;; Indirect buffers
 
 (defun bufferwizard-clone-indirect-buffer (&optional newname
                                                      display-flag
@@ -235,6 +235,23 @@ Returns the newly created indirect buffer."
                (read-buffer "Name of indirect buffer: " (current-buffer)))
            t)))
   (bufferwizard-clone-indirect-buffer newname nil norecord))
+
+(defun bufferwizard-switch-to-base-buffer (&optional buffer)
+  "Switch to the base buffer if BUFFER is indirect.
+Preserve point, `window-start', and horizontal scrolling."
+  (interactive)
+  (let* ((buffer (or buffer (current-buffer)))
+         (base-buffer (buffer-base-buffer buffer)))
+    (unless base-buffer
+      (user-error "Buffer '%s' is not an indirect buffer" (buffer-name buffer)))
+    (let ((point (with-current-buffer buffer (point)))
+          (window-start (window-start))
+          (window-hscroll (window-hscroll)))
+      (switch-to-buffer base-buffer)
+      (goto-char point)
+      (when (eq (current-buffer) base-buffer)
+        (set-window-start nil window-start)
+        (set-window-hscroll nil window-hscroll)))))
 
 ;;; Helpers
 
