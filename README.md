@@ -31,7 +31,7 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 
 ``` emacs-lisp
 (use-package bufferwizard
-  :demand t
+  :ensure t
   :vc (:url "https://github.com/jamescherti/bufferwizard.el"
        :rev :newest))
 ```

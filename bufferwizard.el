@@ -97,67 +97,6 @@ Returns a list of buffers that are associated with FILENAME."
             (push buf list-buffers)))))
     list-buffers))
 
-;;; Rename file
-
-(defun bufferwizard--rename-all-buffer-names (old-filename new-filename)
-  "Update buffer names to reflect the renaming of a file.
-OLD-FILENAME and NEW-FILENAME are absolute paths as returned by `file-truename'.
-
-For all buffers associated with OLD-FILENAME, update the buffer names to use
-NEW-FILENAME.
-
-This includes indirect buffers whose names are derived from the old filename."
-  (let ((basename (file-name-nondirectory old-filename))
-        (new-basename (file-name-nondirectory new-filename)))
-    (dolist (buf (buffer-list))
-      (when (buffer-live-p buf)
-        (with-current-buffer buf
-          (let ((base-buffer (buffer-base-buffer)))
-            (when base-buffer
-              (let* ((base-buffer-file-name
-                      (let ((file-name (buffer-file-name base-buffer)))
-                        (when file-name
-                          (file-truename file-name)))))
-                (when (and base-buffer-file-name
-                           (string= base-buffer-file-name new-filename))
-                  (let ((indirect-buffer-name (buffer-name)))
-                    (let* ((new-buffer-name (concat new-basename
-                                                    (substring
-                                                     indirect-buffer-name
-                                                     (length basename)))))
-                      (when (string-prefix-p basename indirect-buffer-name)
-                        (when new-buffer-name
-                          (rename-buffer new-buffer-name))))))))))))))
-
-;;;###autoload
-(defun bufferwizard-rename-file (&optional buffer)
-  "Rename the current file of that BUFFER is visiting.
-This command updates:
-- The file name on disk,
-- the buffer name,
-- all the indirect buffers or other buffers associated with the old file.
-
-Hooks in `bufferwizard-before-rename-file-functions' and
-`bufferwizard-after-rename-file-functions' are run before and after the renaming
-process."
-  (interactive)
-  (message "Use: https://github.com/jamescherti/bufferfile.el"))
-
-;;; Delete file
-
-;;;###autoload
-(defun bufferwizard-delete-file (&optional buffer)
-  "Kill BUFFER and delete file associated with it.
-Delete the file associated with a buffer and kill all buffers visiting the file,
-including indirect buffers or clones.
-If BUFFER is nil, operate on the current buffer.
-
-Hooks in `bufferwizard-before-delete-file-functions' and
-`bufferwizard-after-delete-file-functions' are run before and after the renaming
-process."
-  (interactive)
-  (message "Use: https://github.com/jamescherti/bufferfile.el"))
-
 ;;; Indirect buffers
 
 (defun bufferwizard-clone-indirect-buffer (&optional newname
@@ -207,7 +146,7 @@ Returns the newly created indirect buffer."
       indirect-buffer)))
 
 (defun bufferwizard-clone-and-switch-to-indirect-buffer (&optional newname
-                                                                    norecord)
+                                                                   norecord)
   "Create an indirect buffer and switch to it.
 
 This function is a variant of `bufferwizard-clone-indirect-buffer', except it
@@ -386,5 +325,52 @@ specified interactively), then remove all hi-lock highlighting."
   (interactive)
   (call-interactively 'hi-lock-unface-buffer))
 
+;;; Rename file
+
+(defun bufferwizard--rename-all-buffer-names (old-filename new-filename)
+  "Update buffer names to reflect the renaming of a file.
+OLD-FILENAME and NEW-FILENAME are absolute paths as returned by `file-truename'.
+
+For all buffers associated with OLD-FILENAME, update the buffer names to use
+NEW-FILENAME.
+
+This includes indirect buffers whose names are derived from the old filename."
+  (let ((basename (file-name-nondirectory old-filename))
+        (new-basename (file-name-nondirectory new-filename)))
+    (dolist (buf (buffer-list))
+      (when (buffer-live-p buf)
+        (with-current-buffer buf
+          (let ((base-buffer (buffer-base-buffer)))
+            (when base-buffer
+              (let* ((base-buffer-file-name
+                      (let ((file-name (buffer-file-name base-buffer)))
+                        (when file-name
+                          (file-truename file-name)))))
+                (when (and base-buffer-file-name
+                           (string= base-buffer-file-name new-filename))
+                  (let ((indirect-buffer-name (buffer-name)))
+                    (let* ((new-buffer-name (concat new-basename
+                                                    (substring
+                                                     indirect-buffer-name
+                                                     (length basename)))))
+                      (when (string-prefix-p basename indirect-buffer-name)
+                        (when new-buffer-name
+                          (rename-buffer new-buffer-name))))))))))))))
+
+;;;###autoload
+(defun bufferwizard-rename-file (&rest _args)
+  "Obsolete function."
+  (interactive)
+  (message "Use: https://github.com/jamescherti/bufferfile.el"))
+
+;;; Delete file
+
+;;;###autoload
+(defun bufferwizard-delete-file (&rest _args)
+  "Obsolete function."
+  (interactive)
+  (message "Use: https://github.com/jamescherti/bufferfile.el"))
+
+;;; Provide
 (provide 'bufferwizard)
 ;;; bufferwizard.el ends here
