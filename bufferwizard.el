@@ -325,52 +325,6 @@ specified interactively), then remove all hi-lock highlighting."
   (interactive)
   (call-interactively 'hi-lock-unface-buffer))
 
-;;; Rename file
-
-(defun bufferwizard--rename-all-buffer-names (old-filename new-filename)
-  "Update buffer names to reflect the renaming of a file.
-OLD-FILENAME and NEW-FILENAME are absolute paths as returned by `file-truename'.
-
-For all buffers associated with OLD-FILENAME, update the buffer names to use
-NEW-FILENAME.
-
-This includes indirect buffers whose names are derived from the old filename."
-  (let ((basename (file-name-nondirectory old-filename))
-        (new-basename (file-name-nondirectory new-filename)))
-    (dolist (buf (buffer-list))
-      (when (buffer-live-p buf)
-        (with-current-buffer buf
-          (let ((base-buffer (buffer-base-buffer)))
-            (when base-buffer
-              (let* ((base-buffer-file-name
-                      (let ((file-name (buffer-file-name base-buffer)))
-                        (when file-name
-                          (file-truename file-name)))))
-                (when (and base-buffer-file-name
-                           (string= base-buffer-file-name new-filename))
-                  (let ((indirect-buffer-name (buffer-name)))
-                    (let* ((new-buffer-name (concat new-basename
-                                                    (substring
-                                                     indirect-buffer-name
-                                                     (length basename)))))
-                      (when (string-prefix-p basename indirect-buffer-name)
-                        (when new-buffer-name
-                          (rename-buffer new-buffer-name))))))))))))))
-
-;;;###autoload
-(defun bufferwizard-rename-file (&rest _args)
-  "Obsolete function."
-  (interactive)
-  (message "Use: https://github.com/jamescherti/bufferfile.el"))
-
-;;; Delete file
-
-;;;###autoload
-(defun bufferwizard-delete-file (&rest _args)
-  "Obsolete function."
-  (interactive)
-  (message "Use: https://github.com/jamescherti/bufferfile.el"))
-
 ;;; Provide
 (provide 'bufferwizard)
 ;;; bufferwizard.el ends here
