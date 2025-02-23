@@ -218,7 +218,6 @@ This function confirms each replacement."
           (when from-string
             (deactivate-mark))
           (setq string-regexp (regexp-quote from-string)))
-      ;; Not a region
       (setq from-string (thing-at-point 'symbol t))
       (setq string-start (car (bounds-of-thing-at-point 'symbol)))
       (setq string-regexp (bufferwizard--symbol-at-point-regexp)))
