@@ -177,7 +177,8 @@ Preserve point, `window-start', and horizontal scrolling."
   "Replace occurrences of FROM-REGEXP with TO-STRING.
 When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
-  ;; Make sure it scrolls
+  (when buffer-read-only
+    (error "The buffer '%s' is read-only" (buffer-name)))
   (let ((orig-window-start (window-start))
         (scroll-conservatively 10))
     (save-excursion
@@ -203,6 +204,8 @@ This function confirms each replacement."
 When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
   (interactive)
+  (when buffer-read-only
+    (error "The buffer '%s' is read-only" (buffer-name)))
   (let ((region nil)
         (from-string nil)
         (string-start nil)
