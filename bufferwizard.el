@@ -162,7 +162,7 @@ Preserve point, `window-start', and horizontal scrolling."
         (set-window-start nil window-start)
         (set-window-hscroll nil window-hscroll)))))
 
-;;; Helpers
+;;; Symbol helpers
 
 (defun bufferwizard--symbol-at-point-regexp ()
   "Return a regexp that matches the symbol at point."
