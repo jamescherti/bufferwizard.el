@@ -53,7 +53,8 @@ The functions `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwiza
 - `case-replace`: When non-nil, this variable ensures that `(bufferwizard-replace-symbol-at-point)` preserves the case of the original text during replacements.
   Example:
   ```elisp
-  ;; t means (bufferwizard-replace-symbol-at-point) should preserve case in replacements.
+  ;; t means (bufferwizard-replace-symbol-at-point) should preserve case in
+  ;; replacements.
   (setq case-replace t)
   ```
 
