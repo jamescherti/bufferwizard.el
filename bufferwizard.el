@@ -39,35 +39,12 @@
           :tag "Github"
           "https://github.com/jamescherti/bufferwizard.el"))
 
-(defcustom bufferwizard-use-vc t
-  "If non-nil, enable using version control (VC) when available.
-When this option is enabled and the file being deleted or renamed is under VC,
-the renaming operation will be handled by the VC backend."
-  :type 'boolean
-  :group 'bufferwizard)
-
 (defcustom bufferwizard-verbose nil
   "If non-nil, display messages during file renaming operations.
 When this option is enabled, messages will indicate the progress
 and outcome of the renaming process."
   :type 'boolean
   :group 'bufferwizard)
-
-(defvar bufferwizard-before-rename-file-functions nil
-  "List of functions to run before renaming a file.
-Each function takes 3 argument: (list-buffers previous-path new-path).")
-
-(defvar bufferwizard-after-rename-file-functions nil
-  "List of functions to run after renaming a file.
-Each function takes 3 argument: (list-buffers previous-path new-path).")
-
-(defvar bufferwizard-before-delete-file-functions nil
-  "List of functions to run before deleting a file.
-Each function takes 2 argument: (list-buffers path).")
-
-(defvar bufferwizard-after-delete-file-functions nil
-  "List of functions to run after deleting a file.
-Each function takes 2 argument: (list-buffers path).")
 
 ;;; Helper functions
 
@@ -201,7 +178,7 @@ Preserve point, `window-start', and horizontal scrolling."
       ;; This returns
       (concat "\\_<" (regexp-quote symbol) "\\_>"))))
 
-;;; Replace occurences (string)
+;;; Search and replace (string)
 
 (defun bufferwizard-replace-regexp (from-regexp &optional to-string)
   "Replace occurrences of FROM-REGEXP with TO-STRING.
