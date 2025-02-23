@@ -42,14 +42,14 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 
 The functions `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwizard-replace-symbol-at-point)` depend on built-in functions that can be customized via the following variable:
 
-- **`case-fold-search`**: This buffer-local variable determines the behavior of `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwizard-replace-symbol-at-point)`. When set to `t` (default), both symbol highlighting and searches become case-insensitive, matching symbols regardless of case. When set to `nil`, they become case-sensitive, matching symbols only when the case exactly matches the text in the buffer.
+- `case-fold-search`: This buffer-local variable determines the behavior of `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwizard-replace-symbol-at-point)`. When set to `t` (default), both symbol highlighting and searches become case-insensitive, matching symbols regardless of case. When set to `nil`, they become case-sensitive, matching symbols only when the case exactly matches the text in the buffer.
   Example:
   ```elisp
   ;; Setting `case-fold-search` to `nil` enables case-sensitive symbol highlighting and search/replace
   (setq-default case-fold-search nil)
   ```
 
-- **`case-replace`**: When non-nil, this variable ensures that `(bufferwizard-replace-symbol-at-point)` preserves the case of the original text during replacements.
+- `case-replace`: When non-nil, this variable ensures that `(bufferwizard-replace-symbol-at-point)` preserves the case of the original text during replacements.
 
 ## Author and License
 
