@@ -39,13 +39,6 @@
           :tag "Github"
           "https://github.com/jamescherti/bufferwizard.el"))
 
-(defcustom bufferwizard-verbose nil
-  "If non-nil, display messages during file renaming operations.
-When this option is enabled, messages will indicate the progress
-and outcome of the renaming process."
-  :type 'boolean
-  :group 'bufferwizard)
-
 ;;; Helper functions
 
 (defun bufferwizard--message (&rest args)
