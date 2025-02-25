@@ -183,9 +183,7 @@ This function confirms each replacement."
         (scroll-conservatively 10))
     (save-excursion
       (let ((undo-handle (prepare-change-group))
-            (start (point))
-            (case-replace t) ; Smart
-            (case-fold-search t))
+            (start (point)))
         (unwind-protect
             (progn
               ;; Replace from the current position
