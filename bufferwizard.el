@@ -197,7 +197,7 @@ This function confirms each replacement."
           (set-window-start nil orig-window-start))))))
 
 ;;;###autoload
-(defun bufferwizard-replace-string-at-point (&optional to-string)
+(defun bufferwizard-replace-symbol-at-point (&optional to-string)
   "Replace occurrences of a symbol at point with a specified string.
 When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
