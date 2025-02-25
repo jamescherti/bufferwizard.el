@@ -166,10 +166,8 @@ Preserve point, `window-start', and horizontal scrolling."
 
 (defun bufferwizard--symbol-at-point-regexp ()
   "Return a regexp that matches the symbol at point."
-  (let ((symbol (thing-at-point 'symbol t)))
-    (when symbol
-      ;; This returns
-      (concat "\\_<" (regexp-quote symbol) "\\_>"))))
+  (when-let* ((symbol (thing-at-point 'symbol t)))
+    (concat "\\_<" (regexp-quote symbol) "\\_>")))
 
 ;;; Search and replace (string)
 
@@ -245,8 +243,8 @@ This function confirms each replacement."
 
 (defun bufferwizard-highlight-p ()
   "Return non-nil the symbol at point is currently highlighted."
-  (member (bufferwizard--symbol-at-point-regexp)
-          (hi-lock--regexps-at-point)))
+  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
+    (member regexp (hi-lock--regexps-at-point))))
 
 ;;;###autoload
 (defun bufferwizard-highlight-symbol-at-point ()
