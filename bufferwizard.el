@@ -245,14 +245,8 @@ This function confirms each replacement."
 
 (defun bufferwizard-highlight-p ()
   "Return non-nil the symbol at point is currently highlighted."
-  (let ((list-regexp-at-point
-         (or (hi-lock--regexps-at-point)
-             (mapcar (lambda (pattern)
-                       (or (car (rassq pattern hi-lock-interactive-lighters))
-                           (car pattern)))
-                     hi-lock-interactive-patterns))))
-    (member (bufferwizard--symbol-at-point-regexp)
-            list-regexp-at-point)))
+  (member (bufferwizard--symbol-at-point-regexp)
+          (hi-lock--regexps-at-point)))
 
 ;;;###autoload
 (defun bufferwizard-highlight-symbol-at-point ()
@@ -262,16 +256,13 @@ This function identifies the symbol at the current point, generates the
 appropriate regular expression for it, and applies highlighting using the
 built-in `hi-lock' package."
   (interactive)
-  (cl-letf (((symbol-function 'find-tag-default-as-symbol-regexp)
-             #'(lambda ()
-                 (bufferwizard--symbol-at-point-regexp))))
-    (hi-lock-face-symbol-at-point)))
+  (hi-lock-face-symbol-at-point))
 
 ;;;###autoload
 (defun bufferwizard-unhighlight-symbol-at-point ()
   "Remove highlighting for the symbol at point."
   (interactive)
-  (let ((regexp (bufferwizard--symbol-at-point-regexp)))
+  (let ((regexp (find-tag-default-as-symbol-regexp)))
     (when regexp
       (hi-lock-unface-buffer regexp))))
 
