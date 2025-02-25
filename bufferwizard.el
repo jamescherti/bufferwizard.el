@@ -6,7 +6,7 @@
 ;; Version: 1.0.0
 ;; URL: https://github.com/jamescherti/bufferwizard.el
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "26.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -256,15 +256,15 @@ This function identifies the symbol at the current point, generates the
 appropriate regular expression for it, and applies highlighting using the
 built-in `hi-lock' package."
   (interactive)
-  (hi-lock-face-symbol-at-point))
+  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
+    (hi-lock-face-symbol-at-point)))
 
 ;;;###autoload
 (defun bufferwizard-unhighlight-symbol-at-point ()
   "Remove highlighting for the symbol at point."
   (interactive)
-  (let ((regexp (find-tag-default-as-symbol-regexp)))
-    (when regexp
-      (hi-lock-unface-buffer regexp))))
+  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
+    (hi-lock-unface-buffer regexp)))
 
 ;;;###autoload
 (defun bufferwizard-toggle-highlight-symbol-at-point ()
