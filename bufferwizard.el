@@ -6,7 +6,7 @@
 ;; Version: 1.0.0
 ;; URL: https://github.com/jamescherti/bufferwizard.el
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "28.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -241,39 +241,57 @@ This function confirms each replacement."
 
 ;;; Highlight symbols
 
+(defun bufferwizard-get-symbol-or-region-regexp ()
+  "Return the regexp of the selected region or the default symbol at point."
+  (when-let* ((regexp (if (use-region-p)
+                          (buffer-substring-no-properties (region-beginning)
+                                                          (region-end))
+                        (find-tag-default))))
+    regexp))
+
 (defun bufferwizard-highlight-p ()
   "Return non-nil the symbol at point is currently highlighted."
-  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
+  (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
     (member regexp (hi-lock--regexps-at-point))))
 
 ;;;###autoload
-(defun bufferwizard-highlight-symbol-at-point ()
+(defun bufferwizard-highlight-at-point ()
   "Highlight the symbol at point in the current buffer.
 
 This function identifies the symbol at the current point, generates the
 appropriate regular expression for it, and applies highlighting using the
 built-in `hi-lock' package."
   (interactive)
-  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
-    (hi-lock-face-symbol-at-point)))
+  ;; Similar to `hi-lock-face-symbol-at-point'
+  (let* ((regexp (bufferwizard-get-symbol-or-region-regexp))
+         (hi-lock-auto-select-face t)
+         (face (hi-lock-read-face-name)))
+    (when regexp
+      (or (facep face) (setq face 'hi-yellow))
+      (unless hi-lock-mode (hi-lock-mode 1))
+      (hi-lock-set-pattern
+       regexp face nil nil
+       (if (and case-fold-search search-upper-case)
+           (isearch-no-upper-case-p regexp t)
+         case-fold-search)))))
 
 ;;;###autoload
-(defun bufferwizard-unhighlight-symbol-at-point ()
+(defun bufferwizard-unhighlight-at-point ()
   "Remove highlighting for the symbol at point."
   (interactive)
-  (when-let* ((regexp (find-tag-default-as-symbol-regexp)))
+  (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
     (hi-lock-unface-buffer regexp)))
 
 ;;;###autoload
-(defun bufferwizard-toggle-highlight-symbol-at-point ()
+(defun bufferwizard-toggle-highlight-at-point ()
   "Toggle highlighting for the symbol at point.
 
 This function checks if the symbol at point is currently highlighted.
 If it is, it removes the highlight; otherwise, it applies the highlight."
   (interactive)
   (if (bufferwizard-highlight-p)
-      (bufferwizard-unhighlight-symbol-at-point)
-    (bufferwizard-highlight-symbol-at-point)))
+      (bufferwizard-unhighlight-at-point)
+    (bufferwizard-highlight-at-point)))
 
 ;;;###autoload
 (defun bufferwizard-unhighlight ()

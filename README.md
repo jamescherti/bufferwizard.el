@@ -4,7 +4,7 @@
 ![](https://raw.githubusercontent.com/jamescherti/bufferwizard.el/main/.images/made-for-gnu-emacs.svg)
 
 The **bufferwizard** Emacs package offers a suite of helper functions:
-- `(bufferwizard-toggle-highlight-symbol-at-point)`: Toggle highlighting for the symbol at point. This function checks if the symbol at point is currently highlighted. If it is, it removes the highlight; otherwise, it applies the highlight. (This is a lightweight alternative to the `highlight-symbol` package.)
+- `(bufferwizard-toggle-highlight-at-point)`: Toggles highlighting for the symbol at point. If a selection is active, it highlights the selected text instead. This function checks whether the symbol at point or the selected text is currently highlighted. If it is, the highlight is removed; otherwise, it is applied. (This serves as a lightweight alternative to the `highlight-symbol` package.)
 - `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
 - `(bufferwizard-clone-indirect-buffer)` and `(bufferwizard-clone-and-switch-to-indirect-buffer)`: These functions are enhanced versions of the built-in `clone-indirect-buffer`. They create an indirect buffer with the same content as the current buffer while preserving the point position, window start, and horizontal scroll position. This package also provides the `(bufferwizard-switch-to-base-buffer)` function, which allows switching from an indirect buffer to its corresponding base buffer.
 
@@ -40,9 +40,9 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 
 #### Case sensitivity
 
-The functions `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwizard-replace-symbol-at-point)` depend on built-in functions that can be customized via the following variable:
+The functions `(bufferwizard-toggle-highlight-at-point)` and `(bufferwizard-replace-symbol-at-point)` depend on built-in functions that can be customized via the following variable:
 
-- `case-fold-search`: This buffer-local variable determines the behavior of `(bufferwizard-toggle-highlight-symbol-at-point)` and `(bufferwizard-replace-symbol-at-point)`. When set to t (default), both symbol highlighting and searches become case-insensitive, matching symbols regardless of case. When set to nil, they become case-sensitive, matching symbols only when the case exactly matches the text in the buffer.
+- `case-fold-search`: This buffer-local variable determines the behavior of `(bufferwizard-toggle-highlight-at-point)` and `(bufferwizard-replace-symbol-at-point)`. When set to t (default), both symbol highlighting and searches become case-insensitive, matching symbols regardless of case. When set to nil, they become case-sensitive, matching symbols only when the case exactly matches the text in the buffer.
   Example:
   ```elisp
   ;; Setting case-fold-search to nil enables case-sensitive symbol highlighting
