@@ -246,7 +246,7 @@ This function confirms each replacement."
   (when-let* ((regexp (if (use-region-p)
                           (buffer-substring-no-properties (region-beginning)
                                                           (region-end))
-                        (find-tag-default))))
+                        (find-tag-default-as-symbol-regexp))))
     regexp))
 
 (defun bufferwizard-highlight-p ()
