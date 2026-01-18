@@ -205,6 +205,12 @@ This function confirms each replacement."
   (let ((region nil)
         (from-string nil)
         (string-start nil)
+        ;; This fixes issues with packages such as aggressive-indent by
+        ;; temporarily preventing automatic buffer modifications during the
+        ;; replacement. Without this, asynchronous changes (like
+        ;; auto-indentation) can shift point and markers, causing replacements
+        ;; to affect the wrong text.
+        (inhibit-modification-hooks t)
         (string-regexp))
     (if (use-region-p)
         ;; Region
