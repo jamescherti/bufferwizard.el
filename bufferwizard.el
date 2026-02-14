@@ -101,9 +101,11 @@ Returns the newly created indirect buffer."
            t)))
   (let* ((point (point))
          (window (selected-window))
-         (window-start (when window
+         (buffer (current-buffer))
+         (buffer-in-current-window (eq buffer (window-buffer )))
+         (window-start (when buffer-in-current-window
                          (window-start)))
-         (window-hscroll (when window
+         (window-hscroll (when buffer-in-current-window
                            (window-hscroll)))
          (indirect-buffer (clone-indirect-buffer newname display-flag norecord)))
     (when (buffer-live-p indirect-buffer)
@@ -115,7 +117,7 @@ Returns the newly created indirect buffer."
           (when (and buffer-window
                      (eq selected-window buffer-window))
 
-            (when (eq (current-buffer) (window-buffer window))
+            (when buffer-in-current-window
               (when window-start
                 (set-window-start selected-window window-start t))
               (when window-hscroll
@@ -161,8 +163,11 @@ Preserve point, `window-start', and horizontal scrolling."
     (unless base-buffer
       (user-error "Buffer '%s' is not an indirect buffer" (buffer-name buffer)))
     (let* ((point (with-current-buffer buffer (point)))
-           (window (selected-window))
-           (window-start (when window
+           (buffer (current-buffer))
+           (buffer-in-current-window (eq buffer (window-buffer )))
+           (window (when buffer-in-current-window
+                     (selected-window)))
+           (window-start (when buffer-in-current-window
                            (window-start)))
            (window-hscroll (when window
                              (window-hscroll))))
@@ -170,7 +175,7 @@ Preserve point, `window-start', and horizontal scrolling."
       (goto-char point)
       (when (eq (current-buffer) base-buffer)
         (when (and (window-live-p window)
-                   (eq (current-buffer) (window-buffer window)))
+                   buffer-in-current-window)
           (when window-start
             (set-window-start window window-start t))
           (when window-hscroll
@@ -191,8 +196,11 @@ When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
   (when buffer-read-only
     (error "The buffer '%s' is read-only" (buffer-name)))
-  (let ((orig-window-start (window-start))
-        (scroll-conservatively 10))
+  (let* ((buffer (current-buffer))
+         (buffer-in-current-window (eq buffer (window-buffer )))
+         (orig-window-start (when buffer-in-current-window
+                              (window-start)))
+         (scroll-conservatively 10))
     (save-excursion
       (let ((undo-handle (prepare-change-group))
             (start (point)))
@@ -206,7 +214,8 @@ This function confirms each replacement."
                 (query-replace-regexp
                  from-regexp to-string nil (point-min) (1- start))))
           (undo-amalgamate-change-group undo-handle)
-          (set-window-start nil orig-window-start t))))))
+          (when buffer-in-current-window
+            (set-window-start nil orig-window-start t)))))))
 
 ;;;###autoload
 (defun bufferwizard-replace-symbol-at-point (&optional to-string)
