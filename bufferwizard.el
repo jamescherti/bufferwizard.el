@@ -32,7 +32,7 @@
 (require 'hi-lock)
 
 (defgroup bufferwizard nil
-  "Buffer wizard."
+  "Buffer wizard settings and configuration."
   :group 'bufferwizard
   :prefix "bufferwizard-"
   :link '(url-link
@@ -56,14 +56,14 @@ visiting the specified FILENAME (based on the true file path), it is added to
 the resulting list.
 
 Returns a list of buffers that are associated with FILENAME."
-  (let ((filename (file-truename filename))
+  (let ((true-filename (file-truename filename))
         (list-buffers nil))
     (dolist (buf (buffer-list))
       (when (buffer-live-p buf)
         (let* ((base-buf (or (buffer-base-buffer buf) buf))
                (buf-filename (when base-buf (buffer-file-name base-buf))))
           (when (and buf-filename
-                     (string-equal filename (file-truename buf-filename)))
+                     (string-equal true-filename (file-truename buf-filename)))
             (push buf list-buffers)))))
     list-buffers))
 
@@ -95,11 +95,11 @@ Returns the newly created indirect buffer."
   (interactive
    (progn
      (if (get major-mode 'no-clone-indirect)
-         (error "Cannot indirectly clone a buffer in %s mode" mode-name))
+         (error "Cannot indirectly clone a buffer in %s mode" major-mode))
      (list (if current-prefix-arg
-               (read-buffer "Name of indirect buffer: " (current-buffer)))
+               (read-buffer "Name of indirect buffer: " (buffer-name)))
            t)))
-  (let* ((point (point))
+  (let* ((point-pos (point))
          (previous-window (selected-window))
          (buffer (current-buffer))
          (buffer-in-current-window (eq buffer (window-buffer previous-window)))
@@ -111,7 +111,7 @@ Returns the newly created indirect buffer."
     (when (buffer-live-p indirect-buffer)
       (switch-to-buffer indirect-buffer)
       (with-current-buffer indirect-buffer
-        (goto-char point)
+        (goto-char point-pos)
         (let ((current-window (selected-window)))
           (when (eq previous-window current-window)
             (when buffer-in-current-window
@@ -145,9 +145,9 @@ Returns the newly created indirect buffer."
   (interactive
    (progn
      (if (get major-mode 'no-clone-indirect)
-         (error "Cannot indirectly clone a buffer in %s mode" mode-name))
+         (error "Cannot indirectly clone a buffer in %s mode" major-mode))
      (list (if current-prefix-arg
-               (read-buffer "Name of indirect buffer: " (current-buffer)))
+               (read-buffer "Name of indirect buffer: " (buffer-name)))
            t)))
   (bufferwizard-clone-indirect-buffer newname nil norecord))
 
@@ -155,11 +155,11 @@ Returns the newly created indirect buffer."
   "Switch to the base buffer if BUFFER is indirect.
 Preserve point, `window-start', and horizontal scrolling."
   (interactive)
-  (let* ((buffer (or buffer (current-buffer)))
-         (base-buffer (buffer-base-buffer buffer)))
+  (let* ((target-buf (or buffer (current-buffer)))
+         (base-buffer (buffer-base-buffer target-buf)))
     (unless base-buffer
-      (user-error "Buffer '%s' is not an indirect buffer" (buffer-name buffer)))
-    (let* ((point (with-current-buffer buffer (point)))
+      (user-error "Buffer '%s' is not an indirect buffer" (buffer-name target-buf)))
+    (let* ((point-pos (with-current-buffer target-buf (point)))
            (current-buf (current-buffer))
            (window (selected-window))
            (buffer-in-current-window (eq current-buf (window-buffer window)))
@@ -168,7 +168,7 @@ Preserve point, `window-start', and horizontal scrolling."
            (window-hscroll (when buffer-in-current-window
                              (window-hscroll window))))
       (switch-to-buffer base-buffer)
-      (goto-char point)
+      (goto-char point-pos)
       (when (eq (current-buffer) base-buffer)
         (when (and (window-live-p window)
                    buffer-in-current-window
@@ -193,9 +193,11 @@ When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
   (when buffer-read-only
     (error "The buffer '%s' is read-only" (buffer-name)))
-  (let* ((buffer (current-buffer))
+  (unless to-string
+    (setq to-string (read-string (format "Replace '%s' with: " from-regexp))))
+  (let* ((buf (current-buffer))
          (window (selected-window))
-         (buffer-in-current-window (eq buffer (window-buffer window)))
+         (buffer-in-current-window (eq buf (window-buffer window)))
          (orig-window-start (when buffer-in-current-window
                               (window-start window)))
          (scroll-conservatively 10))
@@ -218,7 +220,7 @@ This function confirms each replacement."
 
 ;;;###autoload
 (defun bufferwizard-replace-symbol-at-point (&optional to-string)
-  "Replace occurrences of a symbol at point with a specified string.
+  "Replace occurrences of a symbol at point with a specified TO-STRING.
 When TO-STRING is not specified, the user is prompted for input.
 This function confirms each replacement."
   (interactive)
@@ -227,13 +229,7 @@ This function confirms each replacement."
   (let ((region nil)
         (from-string nil)
         (string-start nil)
-        ;; This fixes issues with packages such as aggressive-indent by
-        ;; temporarily preventing automatic buffer modifications during the
-        ;; replacement. Without this, asynchronous changes (like
-        ;; auto-indentation) can shift point and markers, causing replacements
-        ;; to affect the wrong text.
-        (inhibit-modification-hooks t)
-        (string-regexp))
+        (string-regexp nil))
     (if (use-region-p)
         ;; Region
         (progn
@@ -265,22 +261,27 @@ This function confirms each replacement."
         (unhighlight-regexp string-regexp))
       ;; Replace
       (goto-char string-start)
-      (bufferwizard-replace-regexp string-regexp to-string))))
+      (let (;; This fixes issues with packages such as aggressive-indent by
+            ;; temporarily preventing automatic buffer modifications during the
+            ;; replacement. Without this, asynchronous changes (like
+            ;; auto-indentation) can shift point and markers, causing replacements
+            ;; to affect the wrong text.
+            (inhibit-modification-hooks t))
+        (bufferwizard-replace-regexp string-regexp to-string)))))
 
 ;;; Highlight symbols
 
 (defun bufferwizard-get-symbol-or-region-regexp ()
   "Return the regexp of the selected region or the default symbol at point."
-  (when-let* ((regexp (if (use-region-p)
-                          (buffer-substring-no-properties (region-beginning)
-                                                          (region-end))
-                        (find-tag-default-as-symbol-regexp))))
-    regexp))
+  (if (use-region-p)
+      (regexp-quote (buffer-substring-no-properties (region-beginning)
+                                                    (region-end)))
+    (find-tag-default-as-symbol-regexp)))
 
 (defun bufferwizard-highlight-p ()
-  "Return non-nil the symbol at point is currently highlighted."
+  "Return non-nil if the symbol at point is currently highlighted."
   (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
-    (member regexp (hi-lock--regexps-at-point))))
+    (assoc regexp hi-lock-interactive-patterns)))
 
 ;;;###autoload
 (defun bufferwizard-highlight-at-point ()
@@ -328,7 +329,7 @@ Interactively, prompt for REGEXP, accepting only regexps previously inserted by
 hi-lock interactive functions. If REGEXP is t (or if \\[universal-argument] was
 specified interactively), then remove all hi-lock highlighting."
   (interactive)
-  (call-interactively 'hi-lock-unface-buffer))
+  (call-interactively #'hi-lock-unface-buffer))
 
 ;;; Provide
 (provide 'bufferwizard)
