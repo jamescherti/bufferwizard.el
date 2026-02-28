@@ -276,7 +276,7 @@ This function confirms each replacement."
 (defun bufferwizard-highlight-p ()
   "Return non-nil if the symbol at point is currently highlighted."
   (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
-    (assoc regexp hi-lock-interactive-patterns)))
+    (member regexp (hi-lock--regexps-at-point))))
 
 ;;;###autoload
 (defun bufferwizard-highlight-at-point ()
