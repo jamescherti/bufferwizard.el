@@ -42,7 +42,7 @@
 ;;; Helper functions
 
 (defun bufferwizard--message (&rest args)
-  "Display a message with '[bufferwizard]' prepended.
+  "Display a message with [bufferwizard] prepended.
 The message is formatted with the provided arguments ARGS."
   (apply #'message (concat "[bufferwizard] " (car args)) (cdr args)))
 
