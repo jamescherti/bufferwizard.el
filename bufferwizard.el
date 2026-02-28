@@ -226,39 +226,34 @@ This function confirms each replacement."
   (interactive)
   (when buffer-read-only
     (error "The buffer '%s' is read-only" (buffer-name)))
-  (let ((region nil)
-        (from-string nil)
-        (string-start nil)
-        (string-regexp nil))
-    (if (use-region-p)
+  (let ((region (use-region-p))
+        from-string string-start string-regexp)
+    (if region
         ;; Region
         (progn
-          (setq region t)
-          (setq from-string
-                (buffer-substring-no-properties (region-beginning)
-                                                (region-end)))
+          (setq from-string (buffer-substring-no-properties (region-beginning)
+                                                            (region-end)))
           (setq string-start (region-beginning))
-          (when from-string
-            (deactivate-mark))
+          (deactivate-mark)
           (setq string-regexp (regexp-quote from-string)))
+      ;; Not a region. Use the symbol at point.
       (setq from-string (thing-at-point 'symbol t))
-      (setq string-start (car (bounds-of-thing-at-point 'symbol)))
-      (setq string-regexp (bufferwizard--symbol-at-point-regexp)))
-    ;; Ask the user
+      (when from-string
+        (setq string-start (car (bounds-of-thing-at-point 'symbol)))
+        (setq string-regexp (bufferwizard--symbol-at-point-regexp))))
+
     (when from-string
-      (unwind-protect
-          (progn
-            (highlight-regexp string-regexp 'lazy-highlight)
-            (unless to-string
-              (setq to-string
-                    (read-string (format "Replace '%s' with: " from-string)
-                                 from-string))
-              ;; Update the regular expression because the user has just entered
-              ;; a new one.
-              (if region
-                  (setq string-regexp (regexp-quote from-string))
-                (setq string-regexp (bufferwizard--symbol-at-point-regexp)))))
-        (unhighlight-regexp string-regexp))
+      ;; Only apply visual highlighting if we need to prompt the user
+      (unless to-string
+        (let ((highlighted-regexp string-regexp))
+          (unwind-protect
+              (progn
+                (highlight-regexp highlighted-regexp 'lazy-highlight)
+                (setq to-string
+                      (read-string (format "Replace '%s' with: " from-string)
+                                   from-string)))
+            (unhighlight-regexp highlighted-regexp))))
+
       ;; Replace
       (goto-char string-start)
       (let (;; This fixes issues with packages such as aggressive-indent by
