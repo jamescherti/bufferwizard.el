@@ -28,7 +28,6 @@
 
 ;;; Code:
 
-(require 'cl-lib)
 (require 'hi-lock)
 
 (defgroup bufferwizard nil
