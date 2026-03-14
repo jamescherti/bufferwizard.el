@@ -18,7 +18,6 @@ To install `bufferwizard` with `straight.el`:
 2. Add the following code to the Emacs init file:
 ```emacs-lisp
 (use-package bufferwizard
-  :ensure t
   :straight (bufferwizard
              :type git
              :host github
@@ -31,7 +30,6 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 
 ``` emacs-lisp
 (use-package bufferwizard
-  :ensure t
   :vc (:url "https://github.com/jamescherti/bufferwizard.el"
        :rev :newest))
 ```
