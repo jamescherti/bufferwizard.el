@@ -196,15 +196,22 @@ This function confirms each replacement."
          (search-invisible t))
     (save-excursion
       (let ((undo-handle (prepare-change-group))
+            ;; Don't truncate any undo data in the middle of this, otherwise
+            ;; Emacs might truncate part of the resulting undo step.
+            (undo-outer-limit nil)
+            (undo-limit most-positive-fixnum)
+            (undo-strong-limit most-positive-fixnum)
             (start (point)))
         (unwind-protect
             (progn
+              (activate-change-group undo-handle)
               ;; Replace from the current position
               (query-replace-regexp from-regexp to-string nil start (point-max))
               ;; Replace from the beginning
               (when (> start (point-min))
                 (query-replace-regexp
                  from-regexp to-string nil (point-min) (1- start))))
+          (accept-change-group undo-handle)
           (undo-amalgamate-change-group undo-handle)
           ;; Sound restoration check: Is the window alive and still holding our
           ;; buffer?
