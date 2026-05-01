@@ -413,14 +413,11 @@ the key-value pairs defined in `bufferwizard-hl-todo-keywords'."
     (font-lock-remove-keywords nil bufferwizard--compiled-hl-todo-keywords))
 
   ;; Refresh font-lock to apply/remove changes immediately
-  (when (and (bound-and-true-p font-lock-mode)
-             (bound-and-true-p font-lock-set-defaults))
-    (save-restriction
-      (widen)
-      (if (fboundp 'font-lock-flush)
-          (font-lock-flush)
-        ;; Fallback for very old Emacs versions (< 25.1)
-        (with-no-warnings (font-lock-fontify-buffer))))))
+  (when (bound-and-true-p font-lock-mode)
+    (if (fboundp 'font-lock-flush)
+        (font-lock-flush)
+      (with-no-warnings
+        (font-lock-fontify-buffer)))))
 
 ;;;###autoload
 (define-globalized-minor-mode bufferwizard-hl-todo-mode
