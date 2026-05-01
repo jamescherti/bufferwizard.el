@@ -199,7 +199,8 @@ This function confirms each replacement."
          (buffer-in-current-window (eq buf (window-buffer window)))
          (orig-window-start (when buffer-in-current-window
                               (window-start window)))
-         (scroll-conservatively 10))
+         (scroll-conservatively 10)
+         (search-invisible t))
     (save-excursion
       (let ((undo-handle (prepare-change-group))
             (start (point)))
