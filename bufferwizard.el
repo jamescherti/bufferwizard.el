@@ -112,13 +112,14 @@ Returns the newly created indirect buffer."
       (with-current-buffer indirect-buffer
         (goto-char point-pos)
         (let ((current-window (selected-window)))
-          (when (eq previous-window current-window)
-            (when buffer-in-current-window
-              (when window-start
-                (set-window-start current-window window-start t))
-              (when window-hscroll
-                (set-window-hscroll current-window window-hscroll))))))
-      indirect-buffer)))
+          ;; Check if the current window is actually displaying the new buffer
+          (when (and (window-live-p current-window)
+                     (eq (window-buffer current-window) indirect-buffer))
+            (when window-start
+              (set-window-start current-window window-start t))
+            (when window-hscroll
+              (set-window-hscroll current-window window-hscroll))))))
+    indirect-buffer))
 
 (defun bufferwizard-clone-and-switch-to-indirect-buffer (&optional newname
                                                                    norecord)
