@@ -6,7 +6,7 @@
 ;; Version: 1.0.0
 ;; URL: https://github.com/jamescherti/bufferwizard.el
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "28.1"))
+;; Package-Requires: ((emacs "26.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -27,8 +27,6 @@
 ;; and commands for managing buffers.
 
 ;;; Code:
-
-(require 'hi-lock)
 
 (defgroup bufferwizard nil
   "Buffer wizard settings and configuration."
@@ -184,7 +182,8 @@ Preserve point, `window-start', and horizontal scrolling."
 (defun bufferwizard--symbol-at-point-regexp ()
   "Return a regexp that matches the symbol at point."
   (when-let* ((symbol (thing-at-point 'symbol t)))
-    (concat "\\_<" (regexp-quote symbol) "\\_>")))
+    (when symbol
+      (concat "\\_<" (regexp-quote symbol) "\\_>"))))
 
 ;;; Search and replace (string)
 
@@ -278,8 +277,10 @@ This function confirms each replacement."
 
 (defun bufferwizard-highlight-p ()
   "Return non-nil if the symbol at point is currently highlighted."
-  (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
-    (member regexp (hi-lock--regexps-at-point))))
+  (require 'hi-lock)
+  (when (fboundp 'hi-lock--regexps-at-point)
+    (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
+      (member regexp (hi-lock--regexps-at-point)))))
 
 ;;;###autoload
 (defun bufferwizard-highlight-at-point ()
@@ -289,25 +290,33 @@ This function identifies the symbol at the current point, generates the
 appropriate regular expression for it, and applies highlighting using the
 built-in `hi-lock' package."
   (interactive)
-  ;; Similar to `hi-lock-face-symbol-at-point'
-  (let* ((regexp (bufferwizard-get-symbol-or-region-regexp))
-         (hi-lock-auto-select-face t)
-         (face (hi-lock-read-face-name)))
-    (when regexp
-      (or (facep face) (setq face 'hi-yellow))
-      (unless hi-lock-mode (hi-lock-mode 1))
-      (hi-lock-set-pattern
-       regexp face nil nil
-       (if (and case-fold-search search-upper-case)
-           (isearch-no-upper-case-p regexp t)
-         case-fold-search)))))
+  (require 'hi-lock)
+  (when (and (fboundp 'hi-lock-read-face-name)
+             (fboundp 'hi-lock-mode)
+             (fboundp 'hi-lock-set-pattern))
+    ;; Similar to `hi-lock-face-symbol-at-point'
+    (let* ((regexp (bufferwizard-get-symbol-or-region-regexp))
+           (hi-lock-auto-select-face t)
+           (face (hi-lock-read-face-name)))
+      (ignore hi-lock-auto-select-face)
+      (when regexp
+        (or (facep face) (setq face 'hi-yellow))
+        (unless (bound-and-true-p hi-lock-mode)
+          (hi-lock-mode 1))
+        (hi-lock-set-pattern
+         regexp face nil nil
+         (if (and case-fold-search search-upper-case)
+             (isearch-no-upper-case-p regexp t)
+           case-fold-search))))))
 
 ;;;###autoload
 (defun bufferwizard-unhighlight-at-point ()
   "Remove highlighting for the symbol at point."
   (interactive)
-  (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
-    (hi-lock-unface-buffer regexp)))
+  (require 'hi-lock)
+  (when (fboundp 'hi-lock-unface-buffer)
+    (when-let* ((regexp (bufferwizard-get-symbol-or-region-regexp)))
+      (hi-lock-unface-buffer regexp))))
 
 ;;;###autoload
 (defun bufferwizard-toggle-highlight-at-point ()
@@ -327,7 +336,9 @@ Interactively, prompt for REGEXP, accepting only regexps previously inserted by
 hi-lock interactive functions. If REGEXP is t (or if \\[universal-argument] was
 specified interactively), then remove all hi-lock highlighting."
   (interactive)
-  (call-interactively #'hi-lock-unface-buffer))
+  (require 'hi-lock)
+  (when (fboundp 'hi-lock-unface-buffer)
+    (call-interactively #'hi-lock-unface-buffer)))
 
 ;;; Provide
 (provide 'bufferwizard)
