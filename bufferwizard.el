@@ -204,17 +204,16 @@ This function confirms each replacement."
          (scroll-conservatively 10)
          (search-invisible t))
     (save-excursion
-      (let ((undo-handle (prepare-change-group))
-            (start (point)))
+      (let ((start (point)))
         (unwind-protect
-            (progn
+            (with-undo-amalgamate
               ;; Replace from the current position
               (query-replace-regexp from-regexp to-string nil start (point-max))
+
               ;; Replace from the beginning
               (when (> start (point-min))
                 (query-replace-regexp
                  from-regexp to-string nil (point-min) (1- start))))
-          (undo-amalgamate-change-group undo-handle)
           ;; Sound restoration check: Is the window alive and still holding our
           ;; buffer?
           (when (and orig-window-start
