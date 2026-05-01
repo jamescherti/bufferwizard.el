@@ -37,7 +37,7 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 
 ### Customizations
 
-### Codetags highlighting
+#### Codetags highlighting
 
 You can customize the codetags that get highlighted by modifying the `bufferwizard-hl-todo-keywords` variable. By default, it highlights `TODO`, `FIXME`, `BUG`, `XXX` (with warning face, which is generally red) and `NOTE`, `HACK`, `DONE` (with doc face, which is generally green).
 
