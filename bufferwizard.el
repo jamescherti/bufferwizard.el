@@ -158,7 +158,8 @@ Preserve point, `window-start', and horizontal scrolling."
   (let* ((target-buf (or buffer (current-buffer)))
          (base-buffer (buffer-base-buffer target-buf)))
     (unless base-buffer
-      (user-error "Buffer '%s' is not an indirect buffer" (buffer-name target-buf)))
+      (user-error "Buffer '%s' is not an indirect buffer"
+                  (buffer-name target-buf)))
     (let* ((point-pos (with-current-buffer target-buf (point)))
            (current-buf (current-buffer))
            (window (selected-window))
@@ -169,14 +170,14 @@ Preserve point, `window-start', and horizontal scrolling."
                              (window-hscroll window))))
       (switch-to-buffer base-buffer)
       (goto-char point-pos)
-      (when (eq (current-buffer) base-buffer)
-        (when (and (window-live-p window)
-                   buffer-in-current-window
-                   (eq window (selected-window)))
+      ;; Use the active window after the switch, not necessarily the old one
+      (let ((new-window (selected-window)))
+        (when (and (window-live-p new-window)
+                   (eq (window-buffer new-window) base-buffer))
           (when window-start
-            (set-window-start window window-start t))
+            (set-window-start new-window window-start t))
           (when window-hscroll
-            (set-window-hscroll window window-hscroll)))))))
+            (set-window-hscroll new-window window-hscroll)))))))
 
 ;;; Symbol helpers
 
