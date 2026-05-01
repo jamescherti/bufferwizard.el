@@ -177,14 +177,6 @@ Preserve point, `window-start', and horizontal scrolling."
           (when window-hscroll
             (set-window-hscroll new-window window-hscroll)))))))
 
-;;; Symbol helpers
-
-(defun bufferwizard--symbol-at-point-regexp ()
-  "Return a regexp that matches the symbol at point."
-  (when-let* ((symbol (thing-at-point 'symbol t)))
-    (when symbol
-      (concat "\\_<" (regexp-quote symbol) "\\_>"))))
-
 ;;; Search and replace (string)
 
 (defun bufferwizard-replace-regexp (from-regexp &optional to-string)
@@ -219,6 +211,12 @@ This function confirms each replacement."
                      (window-live-p window)
                      (eq (window-buffer window) buf))
             (set-window-start window orig-window-start t)))))))
+
+(defun bufferwizard--symbol-at-point-regexp ()
+  "Return a regexp that matches the symbol at point."
+  (when-let* ((symbol (thing-at-point 'symbol t)))
+    (when symbol
+      (concat "\\_<" (regexp-quote symbol) "\\_>"))))
 
 ;;;###autoload
 (defun bufferwizard-replace-symbol-at-point (&optional to-string)
@@ -340,6 +338,97 @@ specified interactively), then remove all hi-lock highlighting."
   (when (fboundp 'hi-lock-unface-buffer)
     (call-interactively #'hi-lock-unface-buffer)))
 
+;;; Highlight TODO code tags
+
+(defcustom bufferwizard-hl-todo-keywords
+  '(("TODO"   . font-lock-warning-face)
+    ("FIXME"  . font-lock-warning-face)
+    ("BUG"    . font-lock-warning-face)
+    ("XXX"    . font-lock-warning-face)
+    ("DONE"   . font-lock-doc-face)
+    ("HACK"   . font-lock-doc-face)
+    ("NOTE"   . font-lock-doc-face))
+  "Alist of keywords to highlight and their corresponding colors or faces.
+Each element is a cons cell: (KEYWORD . COLOR-OR-FACE).
+- KEYWORD is a string representing the tag (e.g., \"TODO\").
+- COLOR-OR-FACE is either a string specifying a hex color (e.g., \"#FF0000\")
+or a symbol representing an existing face (e.g., \\='font-lock-warning-face)."
+  :type '(alist :key-type string
+                :value-type
+                (choice (color :tag "Hex Color (e.g., ##FF0000)")
+                        (face :tag "Face Name (e.g., font-lock-doc-face)")))
+  :group 'bufferwizard)
+
+(defvar bufferwizard--compiled-hl-todo-keywords nil
+  "Internal cache of compiled font-lock keywords for highlighting TODOs.")
+
+(defun bufferwizard--compile-hl-todo-keywords ()
+  "Translate `bufferwizard-hl-todo-keywords' into optimized `font-lock' regexps."
+  (require 'seq)
+  (if (fboundp 'seq-group-by)
+      (let* (;; Group the alist by the cdr (the face/color)
+             ;; Result:
+             ;; '((font-lock-warning-face . (("TODO" . face)
+             ;;                              ("FIXME" . face))) ...)
+             (grouped-by-face (seq-group-by #'cdr bufferwizard-hl-todo-keywords))
+             compiled-rules)
+
+        (dolist (group grouped-by-face)
+          (let* ((color-or-face (car group))  ; This group's face/color
+                 (entries (cdr group))        ; The list of matching cons cells
+                 (keywords (mapcar #'car entries)) ; Extract string keywords
+
+                 ;; regexp-opt safely escapes and builds the fastest possible
+                 ;; OR-regexp
+                 (regexp (concat "\\_<\\(" (regexp-opt keywords) "\\)\\_>"))
+
+                 ;; Dynamically determine the face property
+                 (face-prop (if (stringp color-or-face)
+                                (list 'quote (list :foreground color-or-face
+                                                   :weight 'bold))
+                              (list 'quote color-or-face))))
+
+            ;; Add the optimized rule for this face group to our final list
+            (push (list regexp 1 face-prop 'prepend) compiled-rules)))
+
+        compiled-rules)
+    (error "Undefined: seq-group-by")))
+
+;;;###autoload
+(define-minor-mode bufferwizard-hl-todo-local-mode
+  "Minor mode to highlight keywords like TODO, FIXME, etc.
+
+When enabled, this mode dynamically builds font-lock rules from
+the key-value pairs defined in `bufferwizard-hl-todo-keywords'."
+  :global nil
+  :lighter " bw-todo"
+  :group 'bufferwizard
+  (if bufferwizard-hl-todo-local-mode
+      (progn
+        ;; Compile and store the keywords so we can reliably remove them later
+        (setq bufferwizard--compiled-hl-todo-keywords
+              (bufferwizard--compile-hl-todo-keywords))
+        (font-lock-add-keywords nil bufferwizard--compiled-hl-todo-keywords t))
+    ;; Remove the exact keywords we previously added
+    (font-lock-remove-keywords nil bufferwizard--compiled-hl-todo-keywords))
+
+  ;; Refresh font-lock to apply/remove changes immediately
+  (when (and (bound-and-true-p font-lock-mode)
+             (bound-and-true-p font-lock-set-defaults))
+    (save-restriction
+      (widen)
+      (if (fboundp 'font-lock-flush)
+          (font-lock-flush)
+        ;; Fallback for very old Emacs versions (< 25.1)
+        (with-no-warnings (font-lock-fontify-buffer))))))
+
+;;;###autoload
+(define-globalized-minor-mode bufferwizard-hl-todo-mode
+  bufferwizard-hl-todo-local-mode
+  (lambda () (bufferwizard-hl-todo-local-mode 1))
+  :group 'bufferwizard)
+
 ;;; Provide
 (provide 'bufferwizard)
+
 ;;; bufferwizard.el ends here

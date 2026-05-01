@@ -7,6 +7,7 @@ The **bufferwizard** Emacs package offers a suite of helper functions:
 - `(bufferwizard-toggle-highlight-at-point)`: Toggles highlighting for the symbol at point. If a selection is active, it highlights the selected text instead. This function checks whether the symbol at point or the selected text is currently highlighted. If it is, the highlight is removed; otherwise, it is applied. (This serves as a lightweight alternative to the `highlight-symbol` package.)
 - `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
 - `(bufferwizard-clone-indirect-buffer)` and `(bufferwizard-clone-and-switch-to-indirect-buffer)`: These functions are enhanced versions of the built-in `clone-indirect-buffer`. They create an indirect buffer with the same content as the current buffer while preserving the point position, window start, and horizontal scroll position. This package also provides the `(bufferwizard-switch-to-base-buffer)` function, which allows switching from an indirect buffer to its corresponding base buffer.
+- `(bufferwizard-hl-todo-mode)`: Automatically highlight codetags (such as TODO, FIXME, BUG, NOTE) in your buffers using custom font-lock rules.
 
 ## Installation
 
@@ -35,6 +36,15 @@ To install `bufferwizard` with `use-package` and `:vc` (Emacs >= 30):
 ```
 
 ### Customizations
+
+### Codetags highlighting
+
+You can customize the codetags that get highlighted by modifying the `bufferwizard-hl-todo-keywords` variable. By default, it highlights `TODO`, `FIXME`, `BUG`, `XXX` (with warning face, which is generally red) and `NOTE`, `HACK`, `DONE` (with doc face, which is generally green).
+
+To enable this feature globally, add the following to your Emacs configuration:
+```elisp
+(bufferwizard-hl-todo-mode 1)
+```
 
 #### Case sensitivity
 
