@@ -433,6 +433,93 @@ the key-value pairs defined in `bufferwizard-hl-todo-keywords'."
   (lambda () (bufferwizard-hl-todo-local-mode 1))
   :group 'bufferwizard)
 
+;;; Paste using indentation
+
+(defun bufferwizard--unindent-string (input-str)
+  "Unindent INPUT-STR by removing the minimal common indentation."
+  (let* (;; Convert tabs to spaces in a temporary buffer to ensure raw character
+         ;; counting accurately reflects visual column depth.
+         (clean-str (with-temp-buffer
+                      (insert input-str)
+                      (untabify (point-min) (point-max))
+                      (buffer-string)))
+
+         ;; To split the input string into individual lines for processing.
+         ;; It allows iterating over each line to measure its leading whitespace
+         ;; independently.
+         (lines (split-string clean-str "\n"))
+
+         ;; To track the smallest amount of leading whitespace found across all
+         ;; lines. It starts as nil so the first non-empty line encountered can
+         ;; establish the initial baseline value.
+         (min-indent nil))
+
+    ;; Find the minimum indentation
+    (dolist (line lines)
+      ;; The line must not be empty
+      (unless (string-match-p "^[ \t]*$" line)
+        (string-match "^[ \t]*" line)
+        ;; And the indent should be lower than the one that has been found
+        ;; previously
+        (setq min-indent (if min-indent
+                             (min min-indent (match-end 0))
+                           (match-end 0)))))
+
+    (setq min-indent (or min-indent 0))
+
+    ;; Remove the minimum indentation from all lines
+    (mapconcat (lambda (line)
+                 (if (>= (length line) min-indent)
+                     (substring line min-indent)
+                   line))
+               lines
+               "\n")))
+
+(defun bufferwizard--insert-aligned ()
+  "Paste text from the clipboard with the current line's indentation."
+  (let ((kill-ring-content (ignore-errors (current-kill 0))))
+    (when kill-ring-content
+      ;; Clear the active region first so that the destination column depth
+      ;; is evaluated from the true post-deletion insertion point.
+      (when (use-region-p)
+        (delete-region (region-beginning) (region-end)))
+
+      (let* (;; Create the literal whitespace string that will be prepended to
+             ;; the pasted lines.
+             (new-indentation (make-string (current-column) ?\s))
+
+             ;; Prepare the raw clipboard text by stripping its original
+             ;; formatting.
+             (text (bufferwizard--unindent-string (string-trim-right
+                                                   (substring-no-properties
+                                                    kill-ring-content)
+                                                   "\n")))
+
+             ;; Construct the final string that will be inserted into the
+             ;; buffer.
+             (text-to-paste (when text
+                              (replace-regexp-in-string
+                               "\n"
+                               (concat "\n" new-indentation)
+                               text))))
+        (when text-to-paste
+          (insert text-to-paste))))))
+
+;;;###autoload
+(defun bufferwizard-paste-indented ()
+  "Paste text from the clipboard with the current line's indentation.
+It unindents the clipboard content by removing the minimal common leading
+whitespace and aligns it perfectly with the cursor's current physical column.
+If called outside the minibuffer, the cursor (point) is safely restored to its
+original position prior to the paste operation."
+  (interactive)
+  (if (minibufferp)
+      (let ((content (ignore-errors (current-kill 0))))
+        (when content
+          (insert content)))
+    (save-excursion
+      (bufferwizard--insert-aligned))))
+
 ;;; Provide
 (provide 'bufferwizard)
 

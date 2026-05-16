@@ -8,6 +8,7 @@ The **bufferwizard** Emacs package offers a suite of helper functions:
 - `(bufferwizard-replace-symbol-at-point)`: Replace occurrences of a symbol at point with a specified string.
 - `(bufferwizard-clone-indirect-buffer)` and `(bufferwizard-clone-and-switch-to-indirect-buffer)`: These functions are enhanced versions of the built-in `clone-indirect-buffer`. They create an indirect buffer with the same content as the current buffer while preserving the point position, window start, and horizontal scroll position. This package also provides the `(bufferwizard-switch-to-base-buffer)` function, which allows switching from an indirect buffer to its corresponding base buffer.
 - `(bufferwizard-hl-todo-mode)`: Automatically highlight codetags (such as TODO, FIXME, BUG, NOTE) in your buffers using custom font-lock rules.
+- `(bufferwizard-paste-indented)`: Paste text from the clipboard while matching the current line's indentation. It unindents the clipboard content by removing the minimal common leading whitespace and aligns it perfectly with the cursor's current physical column.
 
 ## Installation
 
